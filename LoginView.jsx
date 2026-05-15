@@ -1,20 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Loader2 } from 'lucide-react';
-import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyALxsSUclmKJXCBUFVPyTU9QWBfvjkM0tc",
-  authDomain: "manga-inferia.firebaseapp.com",
-  projectId: "manga-inferia",
-  storageBucket: "manga-inferia.firebasestorage.app",
-  messagingSenderId: "693080808285",
-  appId: "1:693080808285:web:539180b1b290c38d3726b4",
-  measurementId: "G-XMZ4911L2V"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+import { signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from './firebase'; // Importação correta!
 
 const LoginView = () => {
   const [loginMode, setLoginMode] = useState('login');
@@ -55,7 +42,6 @@ const LoginView = () => {
   return (
     <div className={`fixed inset-0 z-[9000] flex items-center justify-center p-4 transition-all duration-1000 ease-in-out bg-[#050202]`}>
       <div className={`absolute top-0 w-full h-full opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')]`}></div>
-      
       <div className={`absolute top-1/4 left-1/4 w-72 h-72 rounded-full blur-[140px] pointer-events-none transition-colors duration-1000 ease-in-out ${loginMode === 'register' ? 'bg-[#00E5FF]/15' : 'bg-[#CC0000]/15'}`}></div>
       <div className={`absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full blur-[140px] pointer-events-none transition-colors duration-1000 ease-in-out ${loginMode === 'register' ? 'bg-[#2979FF]/15' : 'bg-[#7A0000]/15'}`}></div>
 
@@ -70,17 +56,11 @@ const LoginView = () => {
         <form onSubmit={handleEmailAuth} className="space-y-4 font-nunito">
           <div className="relative group">
             <Mail className={`absolute left-4 top-3.5 transition-colors duration-500 ${loginMode === 'register' ? 'text-[#A7ADBE] group-focus-within:text-[#00E5FF]' : 'text-[#A7ADBE] group-focus-within:text-[#CC0000]'}`} size={18} />
-            <input 
-              type="email" required placeholder="O seu e-mail" value={email} onChange={(e) => setEmail(e.target.value)}
-              className={`w-full bg-[#050508]/80 border border-[#2A2A35] text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-1 transition-all placeholder-[#555] font-semibold ${loginMode === 'register' ? 'focus:border-[#00E5FF] focus:ring-[#00E5FF]' : 'focus:border-[#CC0000] focus:ring-[#CC0000]'}`}
-            />
+            <input type="email" required placeholder="O seu e-mail" value={email} onChange={(e) => setEmail(e.target.value)} className={`w-full bg-[#050508]/80 border border-[#2A2A35] text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-1 transition-all placeholder-[#555] font-semibold ${loginMode === 'register' ? 'focus:border-[#00E5FF] focus:ring-[#00E5FF]' : 'focus:border-[#CC0000] focus:ring-[#CC0000]'}`} />
           </div>
           <div className="relative group">
             <Lock className={`absolute left-4 top-3.5 transition-colors duration-500 ${loginMode === 'register' ? 'text-[#A7ADBE] group-focus-within:text-[#00E5FF]' : 'text-[#A7ADBE] group-focus-within:text-[#CC0000]'}`} size={18} />
-            <input 
-              type="password" required placeholder="A sua senha secreta" value={password} onChange={(e) => setPassword(e.target.value)}
-              className={`w-full bg-[#050508]/80 border border-[#2A2A35] text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-1 transition-all placeholder-[#555] font-semibold ${loginMode === 'register' ? 'focus:border-[#00E5FF] focus:ring-[#00E5FF]' : 'focus:border-[#CC0000] focus:ring-[#CC0000]'}`}
-            />
+            <input type="password" required placeholder="A sua senha secreta" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full bg-[#050508]/80 border border-[#2A2A35] text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:ring-1 transition-all placeholder-[#555] font-semibold ${loginMode === 'register' ? 'focus:border-[#00E5FF] focus:ring-[#00E5FF]' : 'focus:border-[#CC0000] focus:ring-[#CC0000]'}`} />
           </div>
 
           {authError && <p className="text-[#FF3333] text-xs text-center font-bold animate-pulse">{authError}</p>}
@@ -94,9 +74,8 @@ const LoginView = () => {
           <button onClick={() => setLoginMode(loginMode === 'login' ? 'register' : 'login')} className={`transition-colors duration-500 ${loginMode === 'register' ? 'hover:text-[#00E5FF]' : 'hover:text-[#CC0000]'}`}>
             {loginMode === 'login' ? 'Não tem conta? Criar' : 'Já tem conta? Entrar'}
           </button>
-          <button className={`transition-colors duration-500 ${loginMode === 'register' ? 'hover:text-[#00E5FF]' : 'hover:text-[#CC0000]'}`}>Esqueceu a senha?</button>
         </div>
-
+        
         <div className="my-6 flex items-center gap-4">
           <div className="flex-1 h-px bg-[#2A2A35]"></div>
           <span className="text-[10px] text-[#A7ADBE] font-bold uppercase tracking-widest">ou</span>
