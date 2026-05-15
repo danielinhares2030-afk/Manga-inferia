@@ -1,0 +1,335 @@
+import React, { useState } from 'react';
+import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, Camera, X, CheckCircle2, AlertCircle, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { doc, setDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+
+// Inserindo a inicialização do Firebase diretamente para resolver o erro
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyALxsSUclmKJXCBUFVPyTU9QWBfvjkM0tc",
+  authDomain: "manga-inferia.firebaseapp.com",
+  projectId: "manga-inferia",
+  storageBucket: "manga-inferia.firebasestorage.app",
+  messagingSenderId: "693080808285",
+  appId: "1:693080808285:web:539180b1b290c38d3726b4",
+  measurementId: "G-XMZ4911L2V"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Inserindo a função auxiliar resizeImage diretamente
+const resizeImage = (file, maxWidth, callback) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      callback(canvas.toDataURL('image/jpeg', 0.4));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = () => {} }) => {
+  const [editProfileModal, setEditProfileModal] = useState(false);
+  const [editForm, setEditForm] = useState(perfil);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState(null); 
+  const [historyModal, setHistoryModal] = useState(false);
+  const [notifModal, setNotifModal] = useState(false);
+  const [settingsModal, setSettingsModal] = useState(false);
+  const [notificacoes, setNotificacoes] = useState([]); // Array limpo
+
+  const user = auth.currentUser;
+
+  const openEditProfile = () => {
+    setEditForm(perfil);
+    setProfileMessage(null);
+    setEditProfileModal(true);
+  };
+
+  const handleEditChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
+
+  const handleImageUpload = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      resizeImage(file, 400, (compressedBase64) => {
+        setEditForm(prev => ({ ...prev, [field]: compressedBase64 }));
+      });
+    }
+  };
+
+  const saveProfileSettings = async () => {
+    if (!user) return;
+    setIsSavingProfile(true);
+    setProfileMessage(null);
+    const cleanForm = Object.fromEntries(Object.entries(editForm).filter(([_, v]) => v !== undefined));
+
+    try {
+      await setDoc(doc(db, 'usuarios', user.uid), cleanForm, { merge: true });
+      setEditProfileModal(false);
+      setProfileMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
+      setTimeout(() => setProfileMessage(null), 3500);
+    } catch (error) {
+      console.warn("Erro ao salvar:", error);
+      setProfileMessage({ type: 'error', text: 'Falha ao salvar. Verifique a conexão.' });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const togglePrivacy = async () => {
+    const newValue = !perfil.isPrivate;
+    if (user) {
+      try { 
+        await setDoc(doc(db, 'usuarios', user.uid), { isPrivate: newValue }, { merge: true }); 
+      } 
+      catch (error) { console.warn("Erro offline:", error); }
+    }
+  };
+
+  return (
+    <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen bg-[#050508] text-white">
+      <style dangerouslySetInnerHTML={{__html: `
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
+        .font-anime { font-family: 'Shojumaru', system-ui; }
+        .font-teko { font-family: 'Teko', sans-serif; letter-spacing: 0.05em; }
+        .font-nunito { font-family: 'Nunito', sans-serif; }
+      `}} />
+
+      {profileMessage && (
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[1000] px-4 py-3 rounded-full flex items-center gap-2 text-sm font-bold shadow-lg animate-in fade-in slide-in-from-top-5 ${profileMessage.type === 'success' ? 'bg-green-900/90 text-green-400 border border-green-900' : 'bg-red-900/90 text-red-400 border border-red-900'}`}>
+          {profileMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+          {profileMessage.text}
+        </div>
+      )}
+
+      {/* Capa */}
+      <div className="relative w-full h-48 md:h-64 bg-[#0A0505] border-b border-[#2A0A0A]">
+        <img src={perfil.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} alt="Cover" className="w-full h-full object-cover opacity-50 object-top" loading="lazy" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/30 to-transparent"></div>
+      </div>
+
+      {/* Info do Usuário */}
+      <div className="px-6 relative flex flex-col md:flex-row items-start md:items-end gap-5 -mt-16 z-10 mb-8">
+        <div className="w-28 h-28 md:w-36 md:h-36 shrink-0 rounded-full border-4 border-[#050508] overflow-hidden bg-[#0A0505] shadow-[0_0_30px_rgba(204,0,0,0.3)]">
+          <img src={perfil.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} alt="Avatar" className="w-full h-full object-cover" loading="lazy" />
+        </div>
+        <div className="flex-1 mt-2 md:mt-0 pt-2 w-full">
+          <div className="flex items-center justify-between w-full mb-1">
+            <h2 className="font-anime text-2xl md:text-3xl font-bold tracking-wider leading-none drop-shadow-md">{perfil.nome || 'NOCTIS'}</h2>
+            <button onClick={openEditProfile} className="flex items-center gap-2 bg-[#1A0505] border border-[#CC0000]/40 text-[#FF3333] px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#CC0000] hover:text-white transition-colors shadow-[0_0_15px_rgba(204,0,0,0.2)] font-teko text-lg">
+              <Edit3 size={16} /> Editar
+            </button>
+          </div>
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <span className="bg-[#1A0505] border border-[#CC0000]/30 text-[#FF3333] px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase">Nível {perfil.nivel || 1}</span>
+            <span className="flex items-center gap-1 text-[#A7ADBE] text-xs font-bold"><MapPin size={12}/> {perfil.pais || 'Brasil'}</span>
+            <span className="flex items-center gap-1 text-[#A7ADBE] text-xs font-bold"><Calendar size={12}/> {perfil.idade || '20'} anos</span>
+          </div>
+          <p className="text-sm text-[#A7ADBE] mt-3 max-w-md italic border-l-2 border-[#CC0000] pl-3 font-semibold">"{perfil.biografia || 'Adicione uma biografia legal aqui.'}"</p>
+        </div>
+      </div>
+
+      {/* ESTATÍSTICAS */}
+      <div className="grid grid-cols-3 gap-3 px-4 mb-8">
+        <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+          <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#CC0000] to-transparent opacity-80"></div>
+          <Clock size={18} className="text-[#CC0000] mb-2" />
+          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{perfil.tempoLendo || 0}<span className="text-sm font-nunito text-[#FF3333] ml-0.5">h</span></span>
+          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Horas Lendo</span>
+        </div>
+        <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+          <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#7A3CFF] to-transparent opacity-80"></div>
+          <BookOpen size={18} className="text-[#7A3CFF] mb-2" />
+          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{perfil.obrasLidas || 0}</span>
+          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Obras Lidas</span>
+        </div>
+        <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+          <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#FF8C00] to-transparent opacity-80"></div>
+          <History size={18} className="text-[#FF8C00] mb-2" />
+          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{perfil.capitulosLidos || 0}</span>
+          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Caps. Lidos</span>
+        </div>
+      </div>
+
+      {/* OPÇÕES DO PERFIL */}
+      <div className="pl-4 mb-6">
+        <h3 className="font-anime text-sm md:text-base font-bold tracking-widest uppercase text-[#A7ADBE] mb-4 border-l-2 border-[#2A0A0A] pl-3 leading-none mt-2">Conta</h3>
+        <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4 pr-4 snap-x">
+          <button onClick={() => setHistoryModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg">
+            <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#7A3CFF] border border-[#7A3CFF]/20"><History size={16} /></div>
+            <span className="text-sm font-bold text-left tracking-wide">Histórico<br/>Detalhado</span>
+          </button>
+          <button onClick={() => setNotifModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg relative">
+            {notificacoes.length > 0 && notificacoes.some(n => !n.read) && <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-[#CC0000] rounded-full animate-ping"></div>}
+            <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#FF8C00] border border-[#FF8C00]/20"><Bell size={16} /></div>
+            <span className="text-sm font-bold text-left tracking-wide">Central de<br/>Avisos</span>
+          </button>
+          <button onClick={() => setSettingsModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg">
+            <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#A7ADBE] border border-[#A7ADBE]/20"><Settings size={16} /></div>
+            <span className="text-sm font-bold text-left tracking-wide">Configurar<br/>Leitor</span>
+          </button>
+          <button onClick={() => signOut(auth).then(()=>setActiveTab('home'))} className="snap-start min-w-[140px] bg-[#1A0505] border border-[#CC0000]/30 p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#2A0A0A] transition-colors shadow-lg">
+            <div className="w-8 h-8 rounded-full bg-[#CC0000]/20 flex items-center justify-center text-[#FF3333]"><LogOut size={16} /></div>
+            <span className="text-sm font-bold text-left text-[#FF3333] tracking-wide">Sair da<br/>Conta</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="px-4">
+        <div className="flex items-center justify-between p-4 bg-[#0A0505] border border-[#2A0A0A] rounded-2xl shadow-lg">
+          <div className="flex items-center gap-3">
+            {perfil.isPrivate ? <EyeOff size={22} className="text-[#CC0000]" /> : <Eye size={22} className="text-[#A7ADBE]" />}
+            <div>
+              <p className="text-sm font-bold text-[#F5F7FF] tracking-wide">Privacidade</p>
+              <p className="text-[11px] text-[#A7ADBE] font-bold">{perfil.isPrivate ? 'Seu perfil está Oculto.' : 'Seu perfil é Público.'}</p>
+            </div>
+          </div>
+          <button onClick={togglePrivacy} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${perfil.isPrivate ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
+            <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${perfil.isPrivate ? 'left-7' : 'left-1'}`}></div>
+          </button>
+        </div>
+      </div>
+
+      {/* MODAL DE EDIÇÃO DE PERFIL */}
+      {editProfileModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar font-nunito relative shadow-[0_0_50px_rgba(204,0,0,0.3)]">
+            <button onClick={() => setEditProfileModal(false)} disabled={isSavingProfile} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
+            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2 leading-none mt-1">EDITAR</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Avatar</label>
+                <div className="flex items-center gap-3">
+                  <img src={editForm.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} className="w-12 h-12 rounded-full border border-[#2A0A0A] object-cover" alt="preview" />
+                  <label className="flex-1 bg-[#140505] border border-dashed border-[#CC0000]/50 text-[#CC0000] py-2 rounded-xl text-center cursor-pointer hover:bg-[#CC0000]/10 text-xs font-bold transition-colors">
+                    Escolher da Galeria
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'avatar')} />
+                  </label>
+                </div>
+                <input type="text" name="avatar" value={editForm.avatar || ''} onChange={handleEditChange} placeholder="Ou cole a URL direto..." className="mt-2 w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-2 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Capa de Fundo</label>
+                <div className="flex items-center gap-3">
+                  <img src={editForm.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} className="w-16 h-10 rounded border border-[#2A0A0A] object-cover" alt="preview" />
+                  <label className="flex-1 bg-[#140505] border border-dashed border-[#CC0000]/50 text-[#CC0000] py-2 rounded-xl text-center cursor-pointer hover:bg-[#CC0000]/10 text-xs font-bold transition-colors">
+                    Escolher da Galeria
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'capa')} />
+                  </label>
+                </div>
+                <input type="text" name="capa" value={editForm.capa || ''} onChange={handleEditChange} placeholder="Ou cole a URL direto..." className="mt-2 w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-2 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Nome</label>
+                  <input type="text" name="nome" value={editForm.nome || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Idade</label>
+                  <input type="number" name="idade" value={editForm.idade || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">País</label>
+                  <input type="text" name="pais" value={editForm.pais || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Biografia</label>
+                  <textarea name="biografia" value={editForm.biografia || ''} onChange={handleEditChange} rows="3" className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-6 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
+              {isSavingProfile ? <Loader2 className="animate-spin text-white" size={20} /> : 'SALVAR'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: HISTÓRICO REAL */}
+      {historyModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
+            <button onClick={() => setHistoryModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
+            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#7A3CFF] pl-2 leading-none mt-1">HISTÓRICO</h3>
+            <div className="overflow-y-auto hide-scrollbar space-y-3 flex-1 pr-2">
+              {biblioteca.length > 0 ? biblioteca.slice(0).reverse().map(obra => (
+                <div key={obra.id} className="flex gap-3 bg-[#140505] p-3 rounded-xl border border-[#2A0A0A] items-center">
+                  <img src={obra.capaUrl || obra.img} className="w-12 h-16 object-cover rounded" alt="capa" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-white">{obra.nome || obra.title}</h4>
+                    <p className="text-[10px] text-[#A7ADBE] uppercase tracking-wider font-bold">Progresso: {obra.progresso || 0}% • Cap. {obra.capAtual || 0}</p>
+                  </div>
+                </div>
+              )) : <p className="text-center text-[#A7ADBE] text-sm py-10 font-bold">Você não abriu nenhuma obra ainda.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: AVISOS */}
+      {notifModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
+            <button onClick={() => setNotifModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
+            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#FF8C00] pl-2 leading-none mt-1">AVISOS</h3>
+            <div className="overflow-y-auto hide-scrollbar space-y-3 flex-1 pr-2">
+              {notificacoes.length > 0 ? notificacoes.map(n => (
+                <div key={n.id} className="flex gap-3 bg-[#140505] p-3 rounded-xl border border-[#2A0A0A] items-center">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-white">{n.text}</h4>
+                  </div>
+                </div>
+              )) : <p className="text-center text-[#A7ADBE] text-sm py-10 font-bold">Nenhum aviso no momento.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIGURAÇÕES */}
+      {settingsModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm flex flex-col font-nunito relative">
+            <button onClick={() => setSettingsModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
+            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2 leading-none mt-1">SISTEMA</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
+                <span className="text-sm font-bold text-[#A7ADBE]">Modo Leitura HD</span>
+                <div className="w-10 h-5 bg-[#CC0000] rounded-full relative"><div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1 shadow-sm"></div></div>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
+                <span className="text-sm font-bold text-[#A7ADBE]">Scroll Suave Vertical</span>
+                <div className="w-10 h-5 bg-[#CC0000] rounded-full relative"><div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1 shadow-sm"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+export default ProfileView;
