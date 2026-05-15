@@ -1,50 +1,8 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, Camera, X, CheckCircle2, AlertCircle, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, CheckCircle2, AlertCircle, MapPin, Calendar, Loader2 } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-
-// Inserindo a inicialização do Firebase diretamente para resolver o erro
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyALxsSUclmKJXCBUFVPyTU9QWBfvjkM0tc",
-  authDomain: "manga-inferia.firebaseapp.com",
-  projectId: "manga-inferia",
-  storageBucket: "manga-inferia.firebasestorage.app",
-  messagingSenderId: "693080808285",
-  appId: "1:693080808285:web:539180b1b290c38d3726b4",
-  measurementId: "G-XMZ4911L2V"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// Inserindo a função auxiliar resizeImage diretamente
-const resizeImage = (file, maxWidth, callback) => {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      callback(canvas.toDataURL('image/jpeg', 0.4));
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-};
+import { auth, db } from './firebase'; // Importação correta!
 
 const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = () => {} }) => {
   const [editProfileModal, setEditProfileModal] = useState(false);
@@ -54,7 +12,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const [historyModal, setHistoryModal] = useState(false);
   const [notifModal, setNotifModal] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
-  const [notificacoes, setNotificacoes] = useState([]); // Array limpo
+  const [notificacoes, setNotificacoes] = useState([]); 
 
   const user = auth.currentUser;
 
@@ -66,15 +24,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
-  };
-
-  const handleImageUpload = (e, field) => {
-    const file = e.target.files[0];
-    if (file) {
-      resizeImage(file, 400, (compressedBase64) => {
-        setEditForm(prev => ({ ...prev, [field]: compressedBase64 }));
-      });
-    }
   };
 
   const saveProfileSettings = async () => {
@@ -108,13 +57,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
   return (
     <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen bg-[#050508] text-white">
-      <style dangerouslySetInnerHTML={{__html: `
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
-        .font-anime { font-family: 'Shojumaru', system-ui; }
-        .font-teko { font-family: 'Teko', sans-serif; letter-spacing: 0.05em; }
-        .font-nunito { font-family: 'Nunito', sans-serif; }
-      `}} />
-
       {profileMessage && (
         <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[1000] px-4 py-3 rounded-full flex items-center gap-2 text-sm font-bold shadow-lg animate-in fade-in slide-in-from-top-5 ${profileMessage.type === 'success' ? 'bg-green-900/90 text-green-400 border border-green-900' : 'bg-red-900/90 text-red-400 border border-red-900'}`}>
           {profileMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
@@ -210,7 +152,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       </div>
 
-      {/* MODAL DE EDIÇÃO DE PERFIL */}
+      {/* MODAL DE EDIÇÃO DE PERFIL - APENAS URL (SEM CANVAS) */}
       {editProfileModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar font-nunito relative shadow-[0_0_50px_rgba(204,0,0,0.3)]">
@@ -219,30 +161,22 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Avatar</label>
+                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Link do Avatar</label>
                 <div className="flex items-center gap-3">
                   <img src={editForm.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} className="w-12 h-12 rounded-full border border-[#2A0A0A] object-cover" alt="preview" />
-                  <label className="flex-1 bg-[#140505] border border-dashed border-[#CC0000]/50 text-[#CC0000] py-2 rounded-xl text-center cursor-pointer hover:bg-[#CC0000]/10 text-xs font-bold transition-colors">
-                    Escolher da Galeria
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'avatar')} />
-                  </label>
+                  <input type="text" name="avatar" value={editForm.avatar || ''} onChange={handleEditChange} placeholder="Cole a URL da imagem aqui..." className="flex-1 bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
                 </div>
-                <input type="text" name="avatar" value={editForm.avatar || ''} onChange={handleEditChange} placeholder="Ou cole a URL direto..." className="mt-2 w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-2 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Capa de Fundo</label>
+                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Link da Capa de Fundo</label>
                 <div className="flex items-center gap-3">
                   <img src={editForm.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} className="w-16 h-10 rounded border border-[#2A0A0A] object-cover" alt="preview" />
-                  <label className="flex-1 bg-[#140505] border border-dashed border-[#CC0000]/50 text-[#CC0000] py-2 rounded-xl text-center cursor-pointer hover:bg-[#CC0000]/10 text-xs font-bold transition-colors">
-                    Escolher da Galeria
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'capa')} />
-                  </label>
+                  <input type="text" name="capa" value={editForm.capa || ''} onChange={handleEditChange} placeholder="Cole a URL da imagem aqui..." className="flex-1 bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
                 </div>
-                <input type="text" name="capa" value={editForm.capa || ''} onChange={handleEditChange} placeholder="Ou cole a URL direto..." className="mt-2 w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-2 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="col-span-2">
                   <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Nome</label>
                   <input type="text" name="nome" value={editForm.nome || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none" />
@@ -269,7 +203,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       )}
 
-      {/* MODAL: HISTÓRICO REAL */}
+      {/* OUTROS MODAIS (Histórico, Avisos, Configurações) */}
       {historyModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
@@ -290,7 +224,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       )}
 
-      {/* MODAL: AVISOS */}
       {notifModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
@@ -309,7 +242,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       )}
 
-      {/* MODAL: CONFIGURAÇÕES */}
       {settingsModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm flex flex-col font-nunito relative">
