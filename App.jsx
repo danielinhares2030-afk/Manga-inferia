@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2 } from 'lucide-react'; // Importar Trophy
-import { onSnapshot, collection, doc, setDoc, getDoc } from "firebase/firestore";
+import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2 } from 'lucide-react';
+import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
 import { API_URL } from './constants';
 
 const HomeView = lazy(() => import('./HomeView'));
 const CatalogView = lazy(() => import('./CatalogView'));
-const RankingView = lazy(() => import('./RankingView')); // Novo Import Lazy
+const RankingView = lazy(() => import('./RankingView')); 
 const LibraryView = lazy(() => import('./LibraryView'));
 const ProfileView = lazy(() => import('./ProfileView'));
 const LoginView = lazy(() => import('./LoginView'));
@@ -23,13 +23,17 @@ const App = () => {
 
   const [obras, setObras] = useState([]);
   const [biblioteca, setBiblioteca] = useState([]);
-  // Adicionar campos extras ao perfil para o Ranking (TempoLendo, CapitulosLidos, Nivel, isPrivate)
+  const [todosUsuarios, setTodosUsuarios] = useState([]); // Array Real do Banco
+  
+  // Perfil com sistema de XP base inserido
   const [perfil, setPerfil] = useState({
-    nome: 'NOCTIS', nivel: 1, 
+    nome: 'NOCTIS', 
+    xp: 0, // Campo Oficial de XP
+    nivel: 1, 
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000&auto=format&fit=crop',
     biografia: 'Adicione uma biografia legal aqui.', idade: '20', pais: 'Brasil', isPrivate: false,
-    tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0 // Novos campos
+    tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,15 +73,33 @@ const App = () => {
     };
     carregarObras();
 
+    // Query Profissional para buscar o Ranking Global Real
+    const rankingQuery = query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(50));
+    const unsubRanking = onSnapshot(rankingQuery, (snap) => {
+      setTodosUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     if (!user) return;
     const unsubBib = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca'), (snap) => {
       setBiblioteca(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
-      if (docSnap.exists()) setPerfil(prev => ({ ...prev, ...docSnap.data() }));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Cálculo dinâmico de Nível baseado no XP (A cada 1000 XP sobe 1 nível)
+        const xpAtual = data.xp || 0;
+        const nivelCalculado = Math.floor(xpAtual / 1000) + 1;
+        
+        setPerfil(prev => ({ ...prev, ...data, nivel: nivelCalculado }));
+        
+        // Atualiza nível no banco se o cálculo mostrar que ele subiu
+        if (data.nivel !== nivelCalculado) {
+          setDoc(doc(db, 'usuarios', user.uid), { nivel: nivelCalculado }, { merge: true });
+        }
+      }
     });
 
-    return () => { unsubBib(); unsubPerfil(); };
+    return () => { unsubBib && unsubBib(); unsubPerfil && unsubPerfil(); unsubRanking(); };
   }, [user]);
 
   const { carouselData, obrasDestaque, obrasRecentes, obrasAtualizadas, catalogoFiltrado } = useMemo(() => {
@@ -100,10 +122,9 @@ const App = () => {
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* Glow effect para o Pódio Otimizado com will-change */
-    .glow-gold { filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.45)); will-change-filter; }
-    .glow-silver { filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.35)); will-change-filter; }
-    .glow-bronze { filter: drop-shadow(0 0 8px rgba(205, 127, 50, 0.3)); will-change-filter; }
+    .glow-gold { filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.45)); will-change: filter; }
+    .glow-silver { filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.35)); will-change: filter; }
+    .glow-bronze { filter: drop-shadow(0 0 8px rgba(205, 127, 50, 0.3)); will-change: filter; }
   `;
 
   return (
@@ -145,7 +166,8 @@ const App = () => {
             <Suspense fallback={<div className="flex pt-32 items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-8 h-8" /></div>}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} />}
-              {activeTab === 'ranking' && <RankingView perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />} {/* Novo componente integrado */}
+              {/* Passando a lista de usuários REAIS para o ranking */}
+              {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} />}
             </Suspense>
@@ -153,7 +175,6 @@ const App = () => {
 
           <div className="fixed bottom-0 left-0 w-full z-40 px-4 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
             <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto">
-              {/* Adicionar Trophy ao mapeamento */}
               {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
                   <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
