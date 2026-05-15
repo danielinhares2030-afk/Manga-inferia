@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, CheckCircle2, AlertCircle, MapPin, Calendar, Loader2 } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { auth, db } from './firebase'; // Importação correta!
+import { auth, db } from './firebase'; 
 
 const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = () => {} }) => {
   const [editProfileModal, setEditProfileModal] = useState(false);
@@ -55,8 +55,15 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
     }
   };
 
+  // Cálculos do Sistema de XP para a Barra de Progresso
+  const xpAtual = perfil.xp || 0;
+  const nivelAtual = perfil.nivel || 1;
+  const xpProximoNivel = nivelAtual * 1000;
+  const xpNivelAnterior = (nivelAtual - 1) * 1000;
+  const progressoXP = Math.min(Math.max(((xpAtual - xpNivelAnterior) / 1000) * 100, 0), 100);
+
   return (
-    <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen bg-[#050508] text-white">
+    <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen">
       {profileMessage && (
         <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[1000] px-4 py-3 rounded-full flex items-center gap-2 text-sm font-bold shadow-lg animate-in fade-in slide-in-from-top-5 ${profileMessage.type === 'success' ? 'bg-green-900/90 text-green-400 border border-green-900' : 'bg-red-900/90 text-red-400 border border-red-900'}`}>
           {profileMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
@@ -83,11 +90,27 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
             </button>
           </div>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
-            <span className="bg-[#1A0505] border border-[#CC0000]/30 text-[#FF3333] px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase">Nível {perfil.nivel || 1}</span>
+            <span className="bg-[#1A0505] border border-[#CC0000]/30 text-[#FF3333] px-2 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase">Nível {nivelAtual}</span>
             <span className="flex items-center gap-1 text-[#A7ADBE] text-xs font-bold"><MapPin size={12}/> {perfil.pais || 'Brasil'}</span>
             <span className="flex items-center gap-1 text-[#A7ADBE] text-xs font-bold"><Calendar size={12}/> {perfil.idade || '20'} anos</span>
           </div>
           <p className="text-sm text-[#A7ADBE] mt-3 max-w-md italic border-l-2 border-[#CC0000] pl-3 font-semibold">"{perfil.biografia || 'Adicione uma biografia legal aqui.'}"</p>
+          
+          {/* NOVA BARRA DE XP */}
+          <div className="mt-4 w-full md:max-w-md">
+            <div className="flex justify-between items-end mb-1.5">
+              <span className="text-[10px] text-[#A7ADBE] font-bold uppercase tracking-widest">Progresso do Nível</span>
+              <span className="text-[11px] font-teko text-[#CC0000] font-bold tracking-wider">{xpAtual} / {xpProximoNivel} XP</span>
+            </div>
+            <div className="h-2 bg-[#0A0505] rounded-full overflow-hidden border border-[#2A0A0A] shadow-inner">
+              <div 
+                className="h-full bg-gradient-to-r from-[#990000] to-[#FF3333] shadow-[0_0_10px_#CC0000] transition-all duration-1000 ease-out" 
+                style={{ width: `${progressoXP}%` }}
+              ></div>
+            </div>
+          </div>
+          {/* FIM DA BARRA DE XP */}
+
         </div>
       </div>
 
@@ -152,7 +175,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       </div>
 
-      {/* MODAL DE EDIÇÃO DE PERFIL - APENAS URL (SEM CANVAS) */}
+      {/* MODAL DE EDIÇÃO DE PERFIL */}
       {editProfileModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar font-nunito relative shadow-[0_0_50px_rgba(204,0,0,0.3)]">
@@ -197,28 +220,28 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
             </div>
 
             <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-6 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
-              {isSavingProfile ? <Loader2 className="animate-spin text-white" size={20} /> : 'SALVAR'}
+              {isSavingProfile ? <Loader2 className="animate-spin text-white" size={20} /> : 'SALVAR ALTERAÇÕES'}
             </button>
           </div>
         </div>
       )}
 
-      {/* OUTROS MODAIS (Histórico, Avisos, Configurações) */}
+      {/* OUTROS MODAIS (Histórico e Avisos) */}
       {historyModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
             <button onClick={() => setHistoryModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
-            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#7A3CFF] pl-2 leading-none mt-1">HISTÓRICO</h3>
+            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#7A3CFF] pl-2 leading-none mt-1">HISTÓRICO RECENTE</h3>
             <div className="overflow-y-auto hide-scrollbar space-y-3 flex-1 pr-2">
-              {biblioteca.length > 0 ? biblioteca.slice(0).reverse().map(obra => (
-                <div key={obra.id} className="flex gap-3 bg-[#140505] p-3 rounded-xl border border-[#2A0A0A] items-center">
-                  <img src={obra.capaUrl || obra.img} className="w-12 h-16 object-cover rounded" alt="capa" />
+              {biblioteca.length > 0 ? biblioteca.slice(0).reverse().map(manga => (
+                <div key={manga.id} className="flex gap-3 bg-[#140505] p-3 rounded-xl border border-[#2A0A0A] items-center">
+                  <img src={manga.capaUrl || manga.img} className="w-12 h-16 object-cover rounded" alt="capa" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-bold text-white">{obra.nome || obra.title}</h4>
-                    <p className="text-[10px] text-[#A7ADBE] uppercase tracking-wider font-bold">Progresso: {obra.progresso || 0}% • Cap. {obra.capAtual || 0}</p>
+                    <h4 className="text-sm font-bold text-white">{manga.nome || manga.title}</h4>
+                    <p className="text-[10px] text-[#A7ADBE] uppercase tracking-wider font-medium">Progresso: {manga.progresso || 0}% • Cap. {manga.capAtual || 0}</p>
                   </div>
                 </div>
-              )) : <p className="text-center text-[#A7ADBE] text-sm py-10 font-bold">Você não abriu nenhuma obra ainda.</p>}
+              )) : <p className="text-center text-[#A7ADBE] text-sm py-10 font-medium">Você não abriu nenhuma obra ainda.</p>}
             </div>
           </div>
         </div>
@@ -226,14 +249,23 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
       {notifModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
-            <button onClick={() => setNotifModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
-            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#FF8C00] pl-2 leading-none mt-1">AVISOS</h3>
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#FF8C00] pl-2">AVISOS</h3>
+              <div className="flex gap-2">
+                <button onClick={() => setNotificacoes(notificacoes.map(n => ({ ...n, read: true })))} className="text-[10px] uppercase font-bold text-[#FF8C00] hover:text-white px-2 py-1 bg-[#1A0505] rounded-md">Ler Tudo</button>
+                <button onClick={() => setNotifModal(false)} className="text-[#A7ADBE] hover:text-white"><X size={20} /></button>
+              </div>
+            </div>
             <div className="overflow-y-auto hide-scrollbar space-y-3 flex-1 pr-2">
               {notificacoes.length > 0 ? notificacoes.map(n => (
-                <div key={n.id} className="flex gap-3 bg-[#140505] p-3 rounded-xl border border-[#2A0A0A] items-center">
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-white">{n.text}</h4>
+                <div key={n.id} className={`p-4 rounded-xl border transition-colors ${n.read ? 'bg-[#0A0505] border-[#2A0A0A] opacity-60' : 'bg-[#140505] border-[#FF8C00]/30 shadow-[0_0_10px_rgba(255,140,0,0.1)]'}`}>
+                  <div className="flex gap-3">
+                    {!n.read && <div className="mt-1.5 w-2 h-2 rounded-full bg-[#FF8C00] shrink-0"></div>}
+                    <div>
+                      <p className={`text-sm ${n.read ? 'text-[#A7ADBE]' : 'text-white font-semibold'}`}>{n.text}</p>
+                      <p className="text-[10px] text-[#777] mt-1">{n.time}</p>
+                    </div>
                   </div>
                 </div>
               )) : <p className="text-center text-[#A7ADBE] text-sm py-10 font-bold">Nenhum aviso no momento.</p>}
@@ -244,19 +276,22 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
       {settingsModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm flex flex-col font-nunito relative">
-            <button onClick={() => setSettingsModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
-            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2 leading-none mt-1">SISTEMA</h3>
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm font-nunito relative">
+            <button onClick={() => setSettingsModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white"><X size={20} /></button>
+            <h3 className="text-xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2">SISTEMA</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
                 <span className="text-sm font-bold text-[#A7ADBE]">Modo Leitura HD</span>
-                <div className="w-10 h-5 bg-[#CC0000] rounded-full relative"><div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1 shadow-sm"></div></div>
+                <div className="w-10 h-5 bg-[#CC0000] rounded-full relative"><div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1"></div></div>
               </div>
               <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
                 <span className="text-sm font-bold text-[#A7ADBE]">Scroll Suave Vertical</span>
-                <div className="w-10 h-5 bg-[#CC0000] rounded-full relative"><div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1 shadow-sm"></div></div>
+                <div className="w-10 h-5 bg-[#CC0000] rounded-full relative"><div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1"></div></div>
               </div>
             </div>
+            <button onClick={() => setSettingsModal(false)} className="mt-6 w-full border border-[#A7ADBE] text-[#A7ADBE] py-3 rounded-xl font-bold hover:bg-[#A7ADBE] hover:text-black transition-colors">
+              FECHAR
+            </button>
           </div>
         </div>
       )}
