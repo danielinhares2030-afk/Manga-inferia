@@ -45,21 +45,20 @@ const LoginView = () => {
     <div className={`fixed inset-0 z-[9000] flex items-center justify-center p-4 transition-colors duration-500 ease-in-out ${isRegister ? 'bg-[#000814]/80' : 'bg-[#050202]'} backdrop-blur-md`}>
       <div className={`absolute top-0 w-full h-full opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')]`}></div>
       
-      {/* Luzes de Fundo - Otimizadas com will-change e transição suave */}
       <div className={`absolute top-1/4 left-1/4 w-72 h-72 rounded-full blur-[140px] pointer-events-none transition-all duration-700 ease-in-out ${isRegister ? 'bg-[#00E5FF]/20' : 'bg-[#CC0000]/15'} will-change-transform-opacity`}></div>
       <div className={`absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full blur-[140px] pointer-events-none transition-all duration-700 ease-in-out ${isRegister ? 'bg-[#2979FF]/20' : 'bg-[#7A0000]/15'} will-change-transform-opacity`}></div>
 
-      {/* Card Principal - Otimizado com padding fixo, will-change e animação suave */}
-      <div className={`w-full max-w-lg backdrop-blur-lg border rounded-3xl p-12 relative z-10 transition-all duration-700 ease-in-out shadow-lg will-change-transform-opacity-background ${isRegister ? 'bg-[#000814]/90 border-[#00E5FF]/30 shadow-[#00E5FF]/10' : 'bg-[#0A0505]/95 border-[#CC0000]/30 shadow-[#CC0000]/15'}`}>
-        <h1 className={`font-anime text-4xl text-center mb-4 drop-shadow-lg transition-colors duration-700 ease-in-out ${isRegister ? 'text-[#00E5FF]' : 'text-[#F5F7FF]'}`}>
+      <div className={`w-full max-w-lg backdrop-blur-lg border rounded-3xl p-8 sm:p-12 relative z-10 transition-all duration-700 ease-in-out shadow-lg will-change-transform-opacity-background ${isRegister ? 'bg-[#000814]/90 border-[#00E5FF]/30 shadow-[#00E5FF]/10' : 'bg-[#0A0505]/95 border-[#CC0000]/30 shadow-[#CC0000]/15'}`}>
+        
+        {/* CORREÇÃO DA LOGO: Agora usa text-3xl no mobile e text-4xl no desktop */}
+        <h1 className={`font-anime text-3xl sm:text-4xl text-center mb-4 drop-shadow-lg transition-colors duration-700 ease-in-out ${isRegister ? 'text-[#00E5FF]' : 'text-[#F5F7FF]'}`}>
           MANGA<span className={isRegister ? 'text-[#F5F7FF]' : 'text-[#CC0000]'}>INFERIA</span>
         </h1>
-        <p className="text-center text-[#A7ADBE] text-base mb-12 font-nunito font-semibold">
+        <p className="text-center text-[#A7ADBE] text-base mb-10 font-nunito font-semibold">
           {isRegister ? 'Crie a sua conta agora.' : 'Acesse a sua biblioteca.'}
         </p>
 
-        {/* space-y-6 para dar mais espaço entre os inputs */}
-        <form onSubmit={handleEmailAuth} className="space-y-6 font-nunito">
+        <form onSubmit={handleEmailAuth} className="space-y-5 font-nunito">
           <div className="relative group">
             <Mail className={`absolute left-5 top-5 transition-colors duration-500 ${isRegister ? 'text-[#00E5FF] group-focus-within:text-white' : 'text-[#A7ADBE] group-focus-within:text-[#CC0000]'}`} size={20} />
             <input 
@@ -82,7 +81,8 @@ const LoginView = () => {
           </button>
         </form>
 
-        <div className="mt-8 flex items-center justify-between text-sm text-[#A7ADBE] font-nunito font-semibold">
+        {/* CORREÇÃO DOS LINKS: flex-col no mobile, flex-row no desktop */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#A7ADBE] font-nunito font-semibold">
           <button onClick={() => setLoginMode(isRegister ? 'login' : 'register')} className={`transition-colors duration-500 ${isRegister ? 'hover:text-[#00E5FF]' : 'hover:text-[#CC0000]'}`}>
             {isRegister ? 'Já tem conta? Entrar' : 'Não tem conta? Criar'}
           </button>
@@ -93,7 +93,7 @@ const LoginView = () => {
           )}
         </div>
 
-        <div className="my-10 flex items-center gap-5">
+        <div className="my-8 flex items-center gap-5">
           <div className="flex-1 h-px bg-[#2A2A35]"></div>
           <span className="text-xs text-[#A7ADBE] font-bold uppercase tracking-wider">ou</span>
           <div className="flex-1 h-px bg-[#2A2A35]"></div>
