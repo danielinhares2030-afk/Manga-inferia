@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Home, LayoutGrid, Bookmark, User, Loader2 } from 'lucide-react';
+import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2 } from 'lucide-react'; // Importar Trophy
 import { onSnapshot, collection, doc, setDoc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
@@ -7,6 +7,7 @@ import { API_URL } from './constants';
 
 const HomeView = lazy(() => import('./HomeView'));
 const CatalogView = lazy(() => import('./CatalogView'));
+const RankingView = lazy(() => import('./RankingView')); // Novo Import Lazy
 const LibraryView = lazy(() => import('./LibraryView'));
 const ProfileView = lazy(() => import('./ProfileView'));
 const LoginView = lazy(() => import('./LoginView'));
@@ -22,12 +23,13 @@ const App = () => {
 
   const [obras, setObras] = useState([]);
   const [biblioteca, setBiblioteca] = useState([]);
+  // Adicionar campos extras ao perfil para o Ranking (TempoLendo, CapitulosLidos, Nivel, isPrivate)
   const [perfil, setPerfil] = useState({
     nome: 'NOCTIS', nivel: 1, 
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000&auto=format&fit=crop',
     biografia: 'Adicione uma biografia legal aqui.', idade: '20', pais: 'Brasil', isPrivate: false,
-    tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0
+    tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0 // Novos campos
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,6 +99,11 @@ const App = () => {
     .font-nunito { font-family: 'Nunito', sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Glow effect para o Pódio Otimizado com will-change */
+    .glow-gold { filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.45)); will-change-filter; }
+    .glow-silver { filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.35)); will-change-filter; }
+    .glow-bronze { filter: drop-shadow(0 0 8px rgba(205, 127, 50, 0.3)); will-change-filter; }
   `;
 
   return (
@@ -138,14 +145,16 @@ const App = () => {
             <Suspense fallback={<div className="flex pt-32 items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-8 h-8" /></div>}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} />}
+              {activeTab === 'ranking' && <RankingView perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />} {/* Novo componente integrado */}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} />}
             </Suspense>
           </main>
 
           <div className="fixed bottom-0 left-0 w-full z-40 px-4 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
-            <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-6 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto">
-              {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
+            <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto">
+              {/* Adicionar Trophy ao mapeamento */}
+              {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
                   <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
                   <span className="text-[9px] font-bold uppercase tracking-widest font-teko">{tab.label}</span>
