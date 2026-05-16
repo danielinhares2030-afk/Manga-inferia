@@ -6,6 +6,7 @@ import { db } from './firebase';
 const SaveModal = ({ isOpen, onClose, obra, user }) => {
   if (!isOpen || !obra || !user) return null;
 
+  // Substitua APENAS a função handleSave dentro do seu SaveModal.jsx
   const handleSave = async (status) => {
     try {
       const bibRef = doc(db, 'usuarios', user.uid, 'biblioteca', obra.id);
@@ -14,15 +15,19 @@ const SaveModal = ({ isOpen, onClose, obra, user }) => {
         nome: obra.nome,
         capaUrl: obra.capaUrl,
         tipo: obra.tipo,
-        status: status, // 'Lendo', 'Quero Ler', 'Pausado', 'Concluído'
+        status: status,
         capAtual: 0,
         progresso: 0,
         adicionadoEm: new Date().toISOString()
-      }, { merge: true }); // Merge garante que não apague o progresso se já existir
+      }, { merge: true });
+      
+      // NOVA LINHA QUE GERA O AVISO VISUAL
+      if (window.mostrarAviso) window.mostrarAviso(`Salvo como: ${status}!`);
+      
       onClose();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar na biblioteca.");
+      if (window.mostrarAviso) window.mostrarAviso("Erro ao salvar obra!");
     }
   };
 
