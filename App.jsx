@@ -1,23 +1,19 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2 } from 'lucide-react';
-import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
+import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
-import { API_URL } from './constants';
 
 const HomeView = lazy(() => import('./HomeView'));
 const CatalogView = lazy(() => import('./CatalogView'));
 const RankingView = lazy(() => import('./RankingView')); 
 const LibraryView = lazy(() => import('./LibraryView'));
 const ProfileView = lazy(() => import('./ProfileView'));
-const LoginView = lazy(() => import('./LoginView'));
-// NOVAS TELAS IMPORTADAS
 const MangaDetailsView = lazy(() => import('./MangaDetailsView'));
 const ReaderView = lazy(() => import('./ReaderView'));
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('home');
-  // Controle de Telas Secundárias
   const [selectedObraId, setSelectedObraId] = useState(null);
   const [selectedCapitulo, setSelectedCapitulo] = useState(null);
 
@@ -26,7 +22,6 @@ const App = () => {
   
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashFade, setSplashFade] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
 
   const [obras, setObras] = useState([]);
   const [biblioteca, setBiblioteca] = useState([]);
@@ -34,8 +29,8 @@ const App = () => {
   
   const [perfil, setPerfil] = useState({
     nome: 'NOCTIS', xp: 0, nivel: 1, 
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop', 
-    capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000&auto=format&fit=crop',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200', 
+    capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000',
     biografia: 'Adicione uma biografia legal aqui.', idade: '20', pais: 'Brasil', isPrivate: false,
     tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0
   });
@@ -59,33 +54,39 @@ const App = () => {
           const userRef = doc(db, 'usuarios', currentUser.uid);
           const userSnap = await getDoc(userRef);
           if (!userSnap.exists()) await setDoc(userRef, perfil);
-        } catch (error) { console.warn("Erro Firestore:", error); }
+        } catch (error) { console.warn("Erro Firestore Auth:", error); }
       }
     });
     return () => unsubscribe();
   }, []);
 
+  // CARREGAMENTO REAL E DIRETO DO FIRESTORE
   useEffect(() => {
-    const carregarObras = async () => {
-      try {
-        const res = await fetch(`${API_URL}/obras`);
-        if (res.ok) {
-          const data = await res.json();
-          setObras(data.map(obra => ({ ...obra, id: obra._id })));
-        }
-      } catch (err) { console.warn("API Offline", err); }
-    };
-    carregarObras();
+    // 1. Escutar todas as obras diretamente da coleção do Firestore
+    const unsubObras = onSnapshot(collection(db, 'obras'), (snapshot) => {
+      const listaObras = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setObras(listaObras);
+    }, (error) => {
+      console.error("Erro ao ler obras do Firestore:", error);
+    });
 
+    // 2. Escutar ranking de usuários ordenados por XP real
     const rankingQuery = query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(50));
     const unsubRanking = onSnapshot(rankingQuery, (snap) => {
       setTodosUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
     if (!user) return;
+
+    // 3. Escutar biblioteca do usuário logado
     const unsubBib = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca'), (snap) => {
       setBiblioteca(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
+
+    // 4. Escutar perfil do usuário logado
     const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -96,28 +97,25 @@ const App = () => {
       }
     });
 
-    return () => { unsubBib && unsubBib(); unsubPerfil && unsubPerfil(); unsubRanking(); };
+    return () => { unsubObras(); unsubRanking(); unsubBib(); unsubPerfil(); };
   }, [user]);
 
+  // Filtros inteligentes em memória no Front-end para alimentar a interface
   const { carouselData, obrasDestaque, obrasRecentes, obrasAtualizadas, catalogoFiltrado } = useMemo(() => {
-    const carousel = obras.filter(o => o.isCarousel || o.status === 'Em andamento').slice(0, 5);
+    const carousel = obras.filter(o => o.isCarousel).slice(0, 5);
     const destaque = obras.filter(o => o.isDestaque);
-    const recentes = obras.filter(o => o.isRecente || o.createdAt);
+    const recentes = obras.filter(o => o.isRecente);
     const atualizadas = obras.filter(o => o.isAtualizado);
-    const filtrado = obras.filter(o => {
-      const matchBusca = (o.nome || o.title || '').toLowerCase().includes(searchQuery.toLowerCase());
-      return matchBusca;
-    });
+    const filtrado = obras.filter(o => (o.nome || '').toLowerCase().includes(searchQuery.toLowerCase()));
+    
     return { carouselData: carousel, obrasDestaque: destaque, obrasRecentes: recentes, obrasAtualizadas: atualizadas, catalogoFiltrado: filtrado };
   }, [obras, searchQuery]);
 
-  // Função para abrir a tela de Detalhes
   const handleMangaClick = (id) => {
     setSelectedObraId(id);
     setActiveTab('details');
   };
 
-  // Função para abrir o Leitor
   const handleReadChapter = (capitulo) => {
     setSelectedCapitulo(capitulo);
     setActiveTab('reader');
@@ -135,7 +133,6 @@ const App = () => {
     .glow-bronze { filter: drop-shadow(0 0 8px rgba(205, 127, 50, 0.3)); will-change: filter; }
   `;
 
-  // Identifica se estamos em uma tela de Leitura ou Detalhes para esconder a navegação
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader';
 
   return (
@@ -162,9 +159,8 @@ const App = () => {
         </Suspense>
       ) : user && !splashVisible ? (
         <>
-          {/* Navegação Top (Esconde no Reader e Details) */}
           {!isFullScreenView && (
-            <nav className="fixed top-0 left-0 w-full z-40 bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 pointer-events-none transition-opacity duration-300">
+            <nav className="fixed top-0 left-0 w-full z-40 bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 pointer-events-none">
               <div className="flex items-center justify-between max-w-7xl mx-auto pointer-events-auto">
                 <h1 className="font-anime text-lg md:text-xl shadow-black drop-shadow-md">
                   MANGA<span className="text-[#CC0000]">INFERIA</span>
@@ -178,13 +174,12 @@ const App = () => {
 
           <main className={isFullScreenView ? "pb-0" : "pb-24"}>
             <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
-              {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
+              {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} />}
               
-              {/* RENDERS NOVOS */}
               {activeTab === 'details' && (
                 <MangaDetailsView 
                   obra={obras.find(o => o.id === selectedObraId)} 
@@ -203,7 +198,6 @@ const App = () => {
             </Suspense>
           </main>
 
-          {/* Menu Inferior (Esconde no Reader e Details) */}
           {!isFullScreenView && (
             <div className="fixed bottom-0 left-0 w-full z-40 px-4 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
               <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto">
