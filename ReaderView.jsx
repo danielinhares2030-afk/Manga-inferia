@@ -9,7 +9,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   const [capituloAnterior, setCapituloAnterior] = useState(null);
   const [proximoCapitulo, setProximoCapitulo] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [rollFeito, setRollFeito] = useState(false); 
+  const [rollFeito, setRollFeito] = useState(false); // Para não dropar 2x no mesmo capítulo
 
   useEffect(() => {
     const buscarVizinhos = async () => {
@@ -30,6 +30,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     if (obra && capitulo) buscarVizinhos();
   }, [capitulo, obra]);
 
+  // Sistema de Progresso e Drops
   useEffect(() => {
     const handleScroll = async () => {
       const scrollTotal = document.documentElement.scrollTop;
@@ -37,12 +38,14 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       const percentual = alturaJanela > 0 ? (scrollTotal / alturaJanela) * 100 : 100;
       setProgresso(percentual);
 
+      // DROPS: Se chegou a 95% do capítulo e ainda não tentou a sorte
       if (percentual > 95 && !rollFeito && user) {
         setRollFeito(true);
-        if (Math.random() <= 0.10) {
+        // 35% de chance de dropar um Fragmento Abissal
+        if (Math.random() <= 0.35) {
           const qtdAtual = perfil.fragmentos || 0;
           await setDoc(doc(db, 'usuarios', user.uid), { fragmentos: qtdAtual + 1 }, { merge: true });
-          if (window.mostrarAviso) window.mostrarAviso("🔥 Você encontrou um Fragmento Infernal!");
+          if (window.mostrarAviso) window.mostrarAviso("💎 Você encontrou um Fragmento do Abismo!");
         }
       }
     };
@@ -56,17 +59,17 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     setShowUI(true);
     setProgresso(0);
     setRollFeito(false);
-    setIsTransitioning(false); 
+    setIsTransitioning(false); // Desliga a animação quando o capítulo carrega
     const timer = setTimeout(() => setShowUI(false), 3500);
     return () => clearTimeout(timer);
   }, [capitulo]);
 
   const handleMudarCapitulo = (cap) => {
-    setIsTransitioning(true); 
+    setIsTransitioning(true); // Liga a animação
     window.scrollTo(0, 0);
     setTimeout(() => {
       onReadChapter(cap);
-    }, 800); 
+    }, 800); // 0.8s de animação de carregamento
   };
 
   if (!capitulo) return null;
@@ -75,13 +78,15 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   return (
     <div className="bg-black min-h-screen relative font-nunito">
       
+      {/* TELA DE LOADING AO PULAR CAPÍTULO */}
       {isTransitioning && (
         <div className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
           <Loader2 className="w-16 h-16 text-[#CC0000] animate-spin mb-4" />
-          <p className="text-[#CC0000] font-anime tracking-widest animate-pulse text-sm">ATRAVESSANDO INFERIA...</p>
+          <p className="text-[#CC0000] font-anime tracking-widest animate-pulse text-sm">VIAGEM NO ABISMO...</p>
         </div>
       )}
 
+      {/* Top Bar */}
       <div className={`fixed top-0 left-0 w-full bg-gradient-to-b from-black/90 to-transparent p-4 z-50 flex items-center justify-between transition-transform duration-300 ${showUI ? 'translate-y-0' : '-translate-y-full'}`}>
         <button onClick={onBack} className="w-10 h-10 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg">
           <ArrowLeft size={20} />
@@ -110,7 +115,10 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </div>
       )}
 
+      {/* Bottom Bar de Navegação e Progresso Melhorada */}
       <div className={`fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-12 pb-6 px-4 z-50 transition-transform duration-300 ${showUI && paginas.length > 0 ? 'translate-y-0' : 'translate-y-full'}`}>
+        
+        {/* Barra de Progresso Real */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-[#140505]">
           <div className="h-full bg-gradient-to-r from-[#990000] to-[#FF3333] shadow-[0_0_15px_#CC0000]" style={{ width: `${progresso}%` }}></div>
         </div>
