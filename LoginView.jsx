@@ -1,107 +1,76 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Loader2 } from 'lucide-react';
-import { signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebase';
 
 const LoginView = () => {
-  const [loginMode, setLoginMode] = useState('login');
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [authError, setAuthError] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleEmailAuth = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setAuthError('');
-    setIsSubmitting(true);
+    setError('');
+    setLoading(true);
     try {
-      if (loginMode === 'login') {
+      if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
       }
     } catch (err) {
-      setAuthError('Erro: Verifique os seus dados ou se a conta já existe.');
+      setError('Falha na autenticação. Verifique os dados.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-
-  const handleAnonAuth = async () => {
-    setAuthError('');
-    setIsSubmitting(true);
-    try {
-      await signInAnonymously(auth);
-    } catch (err) {
-      setAuthError('Erro ao entrar como anónimo.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const isRegister = loginMode === 'register';
 
   return (
-    <div className={`fixed inset-0 z-[9000] flex items-center justify-center p-4 transition-colors duration-500 ease-in-out ${isRegister ? 'bg-[#000814]/80' : 'bg-[#050202]'} backdrop-blur-md`}>
-      <div className={`absolute top-0 w-full h-full opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')]`}></div>
+    <div className="min-h-screen bg-[#030305] flex items-center justify-center p-4 relative font-nunito">
+      {/* Background glow effect */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(204,0,0,0.08)_0%,transparent_50%)] pointer-events-none"></div>
       
-      <div className={`absolute top-1/4 left-1/4 w-72 h-72 rounded-full blur-[140px] pointer-events-none transition-all duration-700 ease-in-out ${isRegister ? 'bg-[#00E5FF]/20' : 'bg-[#CC0000]/15'} will-change-transform-opacity`}></div>
-      <div className={`absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full blur-[140px] pointer-events-none transition-all duration-700 ease-in-out ${isRegister ? 'bg-[#2979FF]/20' : 'bg-[#7A0000]/15'} will-change-transform-opacity`}></div>
-
-      <div className={`w-full max-w-lg backdrop-blur-lg border rounded-3xl p-8 sm:p-12 relative z-10 transition-all duration-700 ease-in-out shadow-lg will-change-transform-opacity-background ${isRegister ? 'bg-[#000814]/90 border-[#00E5FF]/30 shadow-[#00E5FF]/10' : 'bg-[#0A0505]/95 border-[#CC0000]/30 shadow-[#CC0000]/15'}`}>
+      <div className="w-full max-w-[340px] bg-[#0A0505]/90 backdrop-blur-xl border border-[#2A0A0A] rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] z-10 animate-in fade-in slide-in-from-bottom-5">
         
-        {/* CORREÇÃO DA LOGO: Agora usa text-3xl no mobile e text-4xl no desktop */}
-        <h1 className={`font-anime text-3xl sm:text-4xl text-center mb-4 drop-shadow-lg transition-colors duration-700 ease-in-out ${isRegister ? 'text-[#00E5FF]' : 'text-[#F5F7FF]'}`}>
-          MANGA<span className={isRegister ? 'text-[#F5F7FF]' : 'text-[#CC0000]'}>INFERIA</span>
-        </h1>
-        <p className="text-center text-[#A7ADBE] text-base mb-10 font-nunito font-semibold">
-          {isRegister ? 'Crie a sua conta agora.' : 'Acesse a sua biblioteca.'}
-        </p>
+        <div className="text-center mb-8">
+          <h1 className="font-anime text-2xl drop-shadow-md text-[#F5F7FF] mb-1">
+            MANGA<span className="text-[#CC0000]">INFERIA</span>
+          </h1>
+          <p className="text-[#A7ADBE] text-xs font-bold uppercase tracking-widest">
+            {isLogin ? 'Bem-vindo de volta' : 'Junte-se ao Abismo'}
+          </p>
+        </div>
 
-        <form onSubmit={handleEmailAuth} className="space-y-5 font-nunito">
-          <div className="relative group">
-            <Mail className={`absolute left-5 top-5 transition-colors duration-500 ${isRegister ? 'text-[#00E5FF] group-focus-within:text-white' : 'text-[#A7ADBE] group-focus-within:text-[#CC0000]'}`} size={20} />
+        {error && <div className="bg-[#CC0000]/10 border border-[#CC0000]/30 text-[#FF3333] text-xs p-3 rounded-xl mb-5 text-center font-bold">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A7ADBE]" size={18} />
             <input 
-              type="email" required placeholder="O seu e-mail" value={email} onChange={(e) => setEmail(e.target.value)}
-              className={`w-full bg-[#050508]/70 border border-[#2A2A35] text-white rounded-xl py-4 pl-14 pr-5 focus:outline-none focus:ring-1 transition-all placeholder-[#555] font-semibold ${isRegister ? 'focus:border-[#00E5FF] focus:ring-[#00E5FF]' : 'focus:border-[#CC0000] focus:ring-[#CC0000]'}`}
+              type="email" placeholder="E-mail" required value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-[#140505] border border-[#2A0A0A] text-white text-sm rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-[#CC0000]/50 transition-colors"
             />
           </div>
-          <div className="relative group">
-            <Lock className={`absolute left-5 top-5 transition-colors duration-500 ${isRegister ? 'text-[#00E5FF] group-focus-within:text-white' : 'text-[#A7ADBE] group-focus-within:text-[#CC0000]'}`} size={20} />
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A7ADBE]" size={18} />
             <input 
-              type="password" required placeholder="A sua senha secreta" value={password} onChange={(e) => setPassword(e.target.value)}
-              className={`w-full bg-[#050508]/70 border border-[#2A2A35] text-white rounded-xl py-4 pl-14 pr-5 focus:outline-none focus:ring-1 transition-all placeholder-[#555] font-semibold ${isRegister ? 'focus:border-[#00E5FF] focus:ring-[#00E5FF]' : 'focus:border-[#CC0000] focus:ring-[#CC0000]'}`}
+              type="password" placeholder="Senha" required value={password} onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-[#140505] border border-[#2A0A0A] text-white text-sm rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-[#CC0000]/50 transition-colors"
             />
           </div>
 
-          {authError && <p className="text-[#FF3333] text-sm text-center font-bold animate-pulse">{authError}</p>}
-
-          <button type="submit" disabled={isSubmitting} className={`w-full text-white py-4 rounded-2xl font-bold tracking-widest transition-all duration-700 hover:scale-[1.02] flex justify-center items-center gap-2 border shadow-md font-teko text-2xl ${isRegister ? 'bg-gradient-to-r from-[#00A3FF] to-[#0055FF] border-[#00E5FF]/50 shadow-[#00E5FF]/20' : 'bg-gradient-to-r from-[#CC0000] to-[#7A0000] border-[#FF3333]/50 shadow-[#CC0000]/25'}`}>
-            {isSubmitting ? <Loader2 className="animate-spin text-white" size={24} /> : (isRegister ? 'CRIAR CONTA' : 'ENTRAR')}
+          <button disabled={loading} className="w-full bg-gradient-to-r from-[#CC0000] to-[#990000] text-white font-bold py-3.5 rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform disabled:opacity-50 mt-2 shadow-[0_0_15px_rgba(204,0,0,0.3)]">
+            {loading ? 'CARREGANDO...' : isLogin ? <><LogIn size={18} /> ENTRAR</> : <><UserPlus size={18} /> REGISTRAR</>}
           </button>
         </form>
 
-        {/* CORREÇÃO DOS LINKS: flex-col no mobile, flex-row no desktop */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#A7ADBE] font-nunito font-semibold">
-          <button onClick={() => setLoginMode(isRegister ? 'login' : 'register')} className={`transition-colors duration-500 ${isRegister ? 'hover:text-[#00E5FF]' : 'hover:text-[#CC0000]'}`}>
-            {isRegister ? 'Já tem conta? Entrar' : 'Não tem conta? Criar'}
+        <div className="mt-6 text-center">
+          <button onClick={() => setIsLogin(!isLogin)} className="text-[#A7ADBE] hover:text-white text-xs font-bold transition-colors">
+            {isLogin ? 'Não tem uma conta? Criar agora' : 'Já tem uma conta? Fazer login'}
           </button>
-          {!isRegister && (
-            <button className="transition-colors duration-500 hover:text-[#CC0000]">
-              Esqueceu a senha?
-            </button>
-          )}
         </div>
-
-        <div className="my-8 flex items-center gap-5">
-          <div className="flex-1 h-px bg-[#2A2A35]"></div>
-          <span className="text-xs text-[#A7ADBE] font-bold uppercase tracking-wider">ou</span>
-          <div className="flex-1 h-px bg-[#2A2A35]"></div>
-        </div>
-
-        <button onClick={handleAnonAuth} disabled={isSubmitting} className="w-full bg-[#050508]/80 border border-[#2A2A35] text-[#A7ADBE] py-4 rounded-2xl font-semibold text-base hover:bg-[#1A1A24] hover:text-white transition-colors flex items-center justify-center gap-3 font-nunito shadow-inner">
-          {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <><User size={20} /> Entrar como Anónimo</>}
-        </button>
       </div>
     </div>
   );
