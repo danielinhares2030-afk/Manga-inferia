@@ -3,34 +3,7 @@ import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2 } from 'lucide-react'
 import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
-
-// --- DETECTOR DE ERROS PARA CELULAR (ERROR BOUNDARY) ---
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, errorMsg: '', errorStack: '' };
-  }
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-  componentDidCatch(error, errorInfo) {
-    this.setState({ errorMsg: error.toString(), errorStack: errorInfo.componentStack });
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{ padding: '20px', background: '#050508', color: '#ff3333', minHeight: '100vh', fontFamily: 'monospace' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '10px' }}>⚠️ Erro Encontrado:</h2>
-          <p style={{ fontSize: '14px', marginBottom: '20px', wordWrap: 'break-word' }}>{this.state.errorMsg}</p>
-          <h3 style={{ fontSize: '16px', color: 'white' }}>Onde o erro aconteceu:</h3>
-          <pre style={{ fontSize: '10px', color: '#A7ADBE', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>{this.state.errorStack}</pre>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-// --------------------------------------------------------
+import SaveModal from './SaveModal';
 
 const HomeView = lazy(() => import('./HomeView'));
 const CatalogView = lazy(() => import('./CatalogView'));
@@ -41,7 +14,7 @@ const MangaDetailsView = lazy(() => import('./MangaDetailsView'));
 const ReaderView = lazy(() => import('./ReaderView'));
 const LoginView = lazy(() => import('./LoginView'));
 
-const AppContent = () => {
+const App = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedObraId, setSelectedObraId] = useState(null);
   const [selectedCapitulo, setSelectedCapitulo] = useState(null);
@@ -51,6 +24,7 @@ const AppContent = () => {
   
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashFade, setSplashFade] = useState(false);
+  const [fontsLoaded, setFontsLoaded] = useState(false); 
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const [obras, setObras] = useState([]);
@@ -68,8 +42,11 @@ const AppContent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [saveModal, setSaveModal] = useState({ isOpen: false, obraId: null });
 
+  // Controle da Tela de Abertura (Splash Screen)
   useEffect(() => {
     document.title = `Manga Inferia | ${activeTab.toUpperCase()}`;
+    document.fonts.ready.then(() => setFontsLoaded(true)); 
+
     const timer1 = setTimeout(() => setSplashFade(true), 2500); 
     const timer2 = setTimeout(() => setSplashVisible(false), 3000); 
     return () => { clearTimeout(timer1); clearTimeout(timer2); };
@@ -131,9 +108,7 @@ const AppContent = () => {
 
   useEffect(() => {
     if (carouselData.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % carouselData.length);
-    }, 5000);
+    const timer = setInterval(() => setCurrentSlide((prev) => (prev + 1) % carouselData.length), 5000);
     return () => clearInterval(timer);
   }, [carouselData.length]);
 
@@ -162,10 +137,11 @@ const AppContent = () => {
     <div className="min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      {splashVisible && (
+      {/* Condição 1: Tela de Abertura Totalmente Isolada */}
+      {splashVisible ? (
         <div className={`fixed inset-0 z-[9999] bg-[#030305] flex flex-col justify-center items-center transition-opacity duration-700 ${splashFade ? 'opacity-0' : 'opacity-100'}`}>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(204,0,0,0.1)_0%,transparent_60%)] pointer-events-none"></div>
-          <div className="relative z-10 w-full px-4 mt-10">
+          <div className={`relative z-10 w-full px-4 mt-10 transition-opacity duration-500 ${fontsLoaded ? 'opacity-100' : 'opacity-0'}`}>
             <h1 className="font-anime text-3xl sm:text-5xl text-center w-full drop-shadow-[0_0_15px_rgba(204,0,0,0.8)] text-[#F5F7FF] animate-pulse">
               MANGA<span className="text-[#CC0000]">INFERIA</span>
             </h1>
@@ -174,13 +150,17 @@ const AppContent = () => {
             <Loader2 className="w-10 h-10 text-[#CC0000] animate-spin drop-shadow-[0_0_10px_rgba(204,0,0,0.5)]" />
           </div>
         </div>
-      )}
-
-      {!user && !authLoading && !splashVisible ? (
+      ) 
+      
+      /* Condição 2: Tela de Login se não tiver usuário logado */
+      : !user && !authLoading ? (
         <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[#050202]"><Loader2 className="animate-spin text-[#CC0000]" /></div>}>
           <LoginView />
         </Suspense>
-      ) : user && !splashVisible ? (
+      ) 
+      
+      /* Condição 3: O App Principal de Fato */
+      : user ? (
         <>
           {!isFullScreenView && (
             <nav className="fixed top-0 left-0 w-full z-40 bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 pointer-events-none">
@@ -202,15 +182,17 @@ const AppContent = () => {
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} />}
-              
-              {activeTab === 'details' && (
-                <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('home')} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} />
-              )}
-              {activeTab === 'reader' && (
-                <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('details')} />
-              )}
+              {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('home')} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} />}
+              {activeTab === 'reader' && <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('details')} onReadChapter={handleReadChapter} />}
             </Suspense>
           </main>
+
+          <SaveModal 
+            isOpen={saveModal.isOpen} 
+            onClose={() => setSaveModal({ isOpen: false, obraId: null })}
+            obra={obras.find(o => o.id === saveModal.obraId)}
+            user={user}
+          />
 
           {!isFullScreenView && (
             <div className="fixed bottom-0 left-0 w-full z-40 px-4 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
@@ -230,11 +212,4 @@ const AppContent = () => {
   );
 };
 
-// Exportando o App com o Detector de Erros em volta
-export default function App() {
-  return (
-    <ErrorBoundary>
-      <AppContent />
-    </ErrorBoundary>
-  );
-}
+export default App;
