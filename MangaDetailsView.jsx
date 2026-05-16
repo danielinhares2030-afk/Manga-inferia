@@ -1,33 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Star, Play, Bookmark, List, Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
-const MangaDetailsView = ({ obra, onBack, onReadChapter, setSaveModal }) => {
+const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModal }) => {
   const [capitulos, setCapitulos] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Verifica se a obra já está salva na biblioteca do usuário
+  const isSaved = biblioteca?.some(b => b.id === obra?.id);
 
   useEffect(() => {
     const carregarCapitulosFirestore = async () => {
       try {
-        // Query real e direta no Firestore filtrando por obraId
-        const q = query(
-          collection(db, 'capitulos'),
-          where('obraId', '==', obra.id)
-        );
-        
+        const q = query(collection(db, 'capitulos'), where('obraId', '==', obra.id));
         const querySnapshot = await getDocs(q);
-        const capsData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        // Ordenação manual por número (caso o índice composto do Firebase ainda não tenha sido gerado pelo console)
+        const capsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         capsData.sort((a, b) => Number(b.numero) - Number(a.numero));
-
         setCapitulos(capsData);
       } catch (err) {
-        console.error("Erro ao buscar capítulos no Firestore:", err);
+        console.error("Erro ao buscar capítulos:", err);
       } finally {
         setLoading(false);
       }
@@ -75,8 +67,13 @@ const MangaDetailsView = ({ obra, onBack, onReadChapter, setSaveModal }) => {
             <Play size={20} fill="currentColor" className="ml-0.5" /> 
             {capitulos.length > 0 ? 'COMEÇAR A LER' : 'SEM CAPÍTULOS'}
           </button>
-          <button onClick={() => setSaveModal({ isOpen: true, obraId: obra.id })} className="w-14 h-14 bg-[#140505] border border-[#2A0A0A] rounded-xl flex items-center justify-center text-[#A7ADBE] hover:text-[#CC0000] hover:border-[#CC0000]/50 transition-colors">
-            <Bookmark size={22} />
+          
+          {/* Botão de Salvar Dinâmico (Muda de cor se já está salvo) */}
+          <button 
+            onClick={() => setSaveModal({ isOpen: true, obraId: obra.id })} 
+            className={`w-14 h-14 border rounded-xl flex items-center justify-center transition-colors shadow-lg ${isSaved ? 'bg-[#CC0000]/20 border-[#CC0000] text-[#CC0000]' : 'bg-[#140505] border-[#2A0A0A] text-[#A7ADBE] hover:text-[#CC0000] hover:border-[#CC0000]/50'}`}
+          >
+            <Bookmark size={22} fill={isSaved ? "currentColor" : "none"} />
           </button>
         </div>
 
