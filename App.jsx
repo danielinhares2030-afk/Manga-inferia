@@ -11,9 +11,16 @@ const RankingView = lazy(() => import('./RankingView'));
 const LibraryView = lazy(() => import('./LibraryView'));
 const ProfileView = lazy(() => import('./ProfileView'));
 const LoginView = lazy(() => import('./LoginView'));
+// NOVAS TELAS IMPORTADAS
+const MangaDetailsView = lazy(() => import('./MangaDetailsView'));
+const ReaderView = lazy(() => import('./ReaderView'));
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('home');
+  // Controle de Telas Secundárias
+  const [selectedObraId, setSelectedObraId] = useState(null);
+  const [selectedCapitulo, setSelectedCapitulo] = useState(null);
+
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   
@@ -23,13 +30,10 @@ const App = () => {
 
   const [obras, setObras] = useState([]);
   const [biblioteca, setBiblioteca] = useState([]);
-  const [todosUsuarios, setTodosUsuarios] = useState([]); // Array Real do Banco
+  const [todosUsuarios, setTodosUsuarios] = useState([]); 
   
-  // Perfil com sistema de XP base inserido
   const [perfil, setPerfil] = useState({
-    nome: 'NOCTIS', 
-    xp: 0, // Campo Oficial de XP
-    nivel: 1, 
+    nome: 'NOCTIS', xp: 0, nivel: 1, 
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000&auto=format&fit=crop',
     biografia: 'Adicione uma biografia legal aqui.', idade: '20', pais: 'Brasil', isPrivate: false,
@@ -73,7 +77,6 @@ const App = () => {
     };
     carregarObras();
 
-    // Query Profissional para buscar o Ranking Global Real
     const rankingQuery = query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(50));
     const unsubRanking = onSnapshot(rankingQuery, (snap) => {
       setTodosUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -86,16 +89,10 @@ const App = () => {
     const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Cálculo dinâmico de Nível baseado no XP (A cada 1000 XP sobe 1 nível)
         const xpAtual = data.xp || 0;
         const nivelCalculado = Math.floor(xpAtual / 1000) + 1;
-        
         setPerfil(prev => ({ ...prev, ...data, nivel: nivelCalculado }));
-        
-        // Atualiza nível no banco se o cálculo mostrar que ele subiu
-        if (data.nivel !== nivelCalculado) {
-          setDoc(doc(db, 'usuarios', user.uid), { nivel: nivelCalculado }, { merge: true });
-        }
+        if (data.nivel !== nivelCalculado) setDoc(doc(db, 'usuarios', user.uid), { nivel: nivelCalculado }, { merge: true });
       }
     });
 
@@ -114,6 +111,18 @@ const App = () => {
     return { carouselData: carousel, obrasDestaque: destaque, obrasRecentes: recentes, obrasAtualizadas: atualizadas, catalogoFiltrado: filtrado };
   }, [obras, searchQuery]);
 
+  // Função para abrir a tela de Detalhes
+  const handleMangaClick = (id) => {
+    setSelectedObraId(id);
+    setActiveTab('details');
+  };
+
+  // Função para abrir o Leitor
+  const handleReadChapter = (capitulo) => {
+    setSelectedCapitulo(capitulo);
+    setActiveTab('reader');
+  };
+
   const globais = `
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
     .font-anime { font-family: 'Shojumaru', system-ui; }
@@ -121,11 +130,13 @@ const App = () => {
     .font-nunito { font-family: 'Nunito', sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
     .glow-gold { filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.45)); will-change: filter; }
     .glow-silver { filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.35)); will-change: filter; }
     .glow-bronze { filter: drop-shadow(0 0 8px rgba(205, 127, 50, 0.3)); will-change: filter; }
   `;
+
+  // Identifica se estamos em uma tela de Leitura ou Detalhes para esconder a navegação
+  const isFullScreenView = activeTab === 'details' || activeTab === 'reader';
 
   return (
     <div className="min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
@@ -151,38 +162,60 @@ const App = () => {
         </Suspense>
       ) : user && !splashVisible ? (
         <>
-          <nav className="fixed top-0 left-0 w-full z-40 bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 pointer-events-none transition-opacity duration-300" style={{ opacity: (activeTab === 'home' || activeTab === 'catalog') ? 1 : 0 }}>
-            <div className="flex items-center justify-between max-w-7xl mx-auto pointer-events-auto">
-              <h1 className="font-anime text-lg md:text-xl shadow-black drop-shadow-md">
-                MANGA<span className="text-[#CC0000]">INFERIA</span>
-              </h1>
-              <div onClick={() => setActiveTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
-                <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
+          {/* Navegação Top (Esconde no Reader e Details) */}
+          {!isFullScreenView && (
+            <nav className="fixed top-0 left-0 w-full z-40 bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 pointer-events-none transition-opacity duration-300">
+              <div className="flex items-center justify-between max-w-7xl mx-auto pointer-events-auto">
+                <h1 className="font-anime text-lg md:text-xl shadow-black drop-shadow-md">
+                  MANGA<span className="text-[#CC0000]">INFERIA</span>
+                </h1>
+                <div onClick={() => setActiveTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
+                  <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
+                </div>
               </div>
-            </div>
-          </nav>
+            </nav>
+          )}
 
-          <main className="pb-24">
-            <Suspense fallback={<div className="flex pt-32 items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-8 h-8" /></div>}>
-              {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} />}
-              {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} />}
-              {/* Passando a lista de usuários REAIS para o ranking */}
+          <main className={isFullScreenView ? "pb-0" : "pb-24"}>
+            <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
+              {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
+              {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} />}
+              
+              {/* RENDERS NOVOS */}
+              {activeTab === 'details' && (
+                <MangaDetailsView 
+                  obra={obras.find(o => o.id === selectedObraId)} 
+                  onBack={() => setActiveTab('home')} 
+                  onReadChapter={handleReadChapter} 
+                  setSaveModal={setSaveModal} 
+                />
+              )}
+              {activeTab === 'reader' && (
+                <ReaderView 
+                  capitulo={selectedCapitulo} 
+                  obra={obras.find(o => o.id === selectedObraId)} 
+                  onBack={() => setActiveTab('details')} 
+                />
+              )}
             </Suspense>
           </main>
 
-          <div className="fixed bottom-0 left-0 w-full z-40 px-4 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
-            <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto">
-              {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
-                  <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                  <span className="text-[9px] font-bold uppercase tracking-widest font-teko">{tab.label}</span>
-                </button>
-              ))}
+          {/* Menu Inferior (Esconde no Reader e Details) */}
+          {!isFullScreenView && (
+            <div className="fixed bottom-0 left-0 w-full z-40 px-4 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
+              <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto">
+                {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
+                    <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                    <span className="text-[9px] font-bold uppercase tracking-widest font-teko">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </>
       ) : null}
     </div>
