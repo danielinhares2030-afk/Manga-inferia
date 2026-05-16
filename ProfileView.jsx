@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, CheckCircle2, AlertCircle, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, CheckCircle2, AlertCircle, MapPin, Calendar, Loader2, Flame } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { auth, db } from './firebase'; 
@@ -13,6 +13,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const [notifModal, setNotifModal] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
   const [notificacoes, setNotificacoes] = useState([]); 
+  const [loadingReator, setLoadingReator] = useState(false);
 
   const user = auth.currentUser;
 
@@ -52,6 +53,29 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         await setDoc(doc(db, 'usuarios', user.uid), { isPrivate: newValue }, { merge: true }); 
       } 
       catch (error) { console.warn("Erro offline:", error); }
+    }
+  };
+
+  // SISTEMA DA FORNALHA DE INFERIA
+  const fragmentos = perfil.fragmentos || 0;
+  const podeSintetizar = fragmentos >= 5;
+
+  const usarReator = async () => {
+    if (!user || !podeSintetizar || loadingReator) return;
+    setLoadingReator(true);
+    try {
+      await setDoc(doc(db, 'usuarios', user.uid), {
+        fragmentos: fragmentos - 5,
+        xp: (perfil.xp || 0) + 500
+      }, { merge: true });
+      setProfileMessage({ type: 'success', text: '🔥 Fragmentos Queimados! +500 XP' });
+      setTimeout(() => setProfileMessage(null), 3500);
+    } catch (err) { 
+      console.error(err); 
+      setProfileMessage({ type: 'error', text: 'Erro ao queimar fragmentos.' });
+      setTimeout(() => setProfileMessage(null), 3500);
+    } finally { 
+      setLoadingReator(false); 
     }
   };
 
@@ -115,7 +139,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       </div>
 
       {/* ESTATÍSTICAS */}
-      <div className="grid grid-cols-3 gap-3 px-4 mb-8">
+      <div className="grid grid-cols-3 gap-3 px-4 mb-6">
         <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
           <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#CC0000] to-transparent opacity-80"></div>
           <Clock size={18} className="text-[#CC0000] mb-2" />
@@ -133,6 +157,36 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
           <History size={18} className="text-[#FF8C00] mb-2" />
           <span className="text-2xl font-black text-[#F5F7FF] font-teko">{perfil.capitulosLidos || 0}</span>
           <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Caps. Lidos</span>
+        </div>
+      </div>
+
+      {/* FORNALHA DE INFERIA (GAMIFICAÇÃO INTEGRADA) */}
+      <div className="px-4 mb-8">
+        <div className="bg-gradient-to-br from-[#140505] to-[#0A0505] border border-[#CC0000]/30 rounded-3xl p-6 shadow-[0_0_30px_rgba(204,0,0,0.1)] relative overflow-hidden">
+          <Flame className="absolute -right-4 -bottom-4 w-32 h-32 text-[#CC0000]/10 rotate-12 pointer-events-none" />
+          <h3 className="font-anime text-lg text-[#F5F7FF] mb-1">FORNALHA DE INFERIA</h3>
+          <p className="text-xs text-[#A7ADBE] font-bold mb-4">Queime os fragmentos infernais dropados nas leituras para ganhar XP.</p>
+          
+          <div className="flex items-center justify-between bg-black/50 p-4 rounded-xl border border-[#2A0A0A] mb-4 relative z-10">
+            <div>
+              <p className="text-[10px] text-[#A7ADBE] font-bold uppercase mb-1 tracking-wider">Fragmentos Infernais</p>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-teko text-[#FF3333]">{fragmentos}</span>
+                <span className="text-sm font-bold text-[#555]">/ 5</span>
+              </div>
+            </div>
+            <div className="w-24 md:w-32 h-2 bg-[#1A0505] rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-[#CC0000] to-[#FF5555] shadow-[0_0_10px_#CC0000] transition-all" style={{ width: `${Math.min((fragmentos / 5) * 100, 100)}%` }}></div>
+            </div>
+          </div>
+
+          <button 
+            onClick={usarReator} 
+            disabled={!podeSintetizar || loadingReator}
+            className="w-full relative z-10 bg-gradient-to-r from-[#CC0000] to-[#990000] disabled:from-[#2A0A0A] disabled:to-[#2A0A0A] disabled:text-[#555] text-white font-bold py-3.5 rounded-xl text-sm uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] disabled:shadow-none flex items-center justify-center gap-2"
+          >
+            {loadingReator ? <Loader2 className="animate-spin" /> : podeSintetizar ? 'QUEIMAR FRAGMENTOS (+500 XP)' : 'FALTAM FRAGMENTOS'}
+          </button>
         </div>
       </div>
 
