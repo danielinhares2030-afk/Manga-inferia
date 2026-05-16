@@ -1,12 +1,11 @@
 import React from 'react';
-import { X, BookOpen, Clock, PauseCircle, CheckCircle2 } from 'lucide-react';
+import { X, BookOpen, CheckCircle2, Star, XCircle } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 const SaveModal = ({ isOpen, onClose, obra, user }) => {
   if (!isOpen || !obra || !user) return null;
 
-  // Substitua APENAS a função handleSave dentro do seu SaveModal.jsx
   const handleSave = async (status) => {
     try {
       const bibRef = doc(db, 'usuarios', user.uid, 'biblioteca', obra.id);
@@ -21,9 +20,7 @@ const SaveModal = ({ isOpen, onClose, obra, user }) => {
         adicionadoEm: new Date().toISOString()
       }, { merge: true });
       
-      // NOVA LINHA QUE GERA O AVISO VISUAL
-      if (window.mostrarAviso) window.mostrarAviso(`Salvo como: ${status}!`);
-      
+      if (window.mostrarAviso) window.mostrarAviso(`Salvo em: ${status}!`);
       onClose();
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -33,9 +30,9 @@ const SaveModal = ({ isOpen, onClose, obra, user }) => {
 
   const statusOptions = [
     { label: 'Lendo', icon: BookOpen, color: 'text-blue-400', bg: 'hover:bg-blue-400/10 hover:border-blue-400/50' },
-    { label: 'Quero Ler', icon: Clock, color: 'text-yellow-400', bg: 'hover:bg-yellow-400/10 hover:border-yellow-400/50' },
-    { label: 'Pausado', icon: PauseCircle, color: 'text-orange-400', bg: 'hover:bg-orange-400/10 hover:border-orange-400/50' },
-    { label: 'Concluído', icon: CheckCircle2, color: 'text-green-400', bg: 'hover:bg-green-400/10 hover:border-green-400/50' }
+    { label: 'Finalizado', icon: CheckCircle2, color: 'text-green-400', bg: 'hover:bg-green-400/10 hover:border-green-400/50' },
+    { label: 'Favorito', icon: Star, color: 'text-yellow-400', bg: 'hover:bg-yellow-400/10 hover:border-yellow-400/50' },
+    { label: 'Dropado', icon: XCircle, color: 'text-red-400', bg: 'hover:bg-red-400/10 hover:border-red-400/50' }
   ];
 
   return (
