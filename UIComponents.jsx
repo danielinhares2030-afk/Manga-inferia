@@ -1,9 +1,9 @@
 import React from 'react';
 import { Play, Star, Bookmark, Settings, ChevronRight } from 'lucide-react';
 
-export const MangaCard = React.memo(({ manga, variant = 'default', badge, isUpdate, onBookmark, onSettings }) => {
+export const MangaCard = React.memo(({ manga, variant = 'default', badge, isUpdate, onBookmark, onSettings, onClick }) => {
   return (
-    <div className="group cursor-pointer relative font-nunito w-full h-full flex flex-col">
+    <div onClick={() => onClick && onClick(manga.id)} className="group cursor-pointer relative font-nunito w-full h-full flex flex-col">
       <div className={`relative aspect-[2/3] overflow-hidden bg-[#0A0505] border border-[#2A0A0A] ${variant === 'library' ? 'rounded-t-xl' : 'rounded-xl'}`}>
         <img src={manga.capaUrl || manga.img || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=200"} alt={manga.nome || manga.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-90 group-hover:opacity-100" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -59,7 +59,7 @@ export const MangaCard = React.memo(({ manga, variant = 'default', badge, isUpda
   );
 });
 
-export const Shelf = React.memo(({ title, data, color, badge, isUpdate, onBookmark }) => {
+export const Shelf = React.memo(({ title, data, color, badge, isUpdate, onBookmark, onMangaClick }) => {
   if (!data || data.length === 0) return null;
   return (
     <section className="mt-6">
@@ -72,8 +72,8 @@ export const Shelf = React.memo(({ title, data, color, badge, isUpdate, onBookma
       </div>
       <div className="flex overflow-x-auto gap-3 px-4 pb-4 hide-scrollbar snap-x">
         {data.map((manga) => (
-          <div key={manga.id} className="min-w-[120px] snap-start">
-            <MangaCard manga={manga} badge={badge} isUpdate={isUpdate} onBookmark={onBookmark} />
+          <div key={manga.id} className="min-w-[120px] w-[120px] snap-start">
+            <MangaCard manga={manga} badge={badge} isUpdate={isUpdate} onBookmark={onBookmark} onClick={onMangaClick} />
           </div>
         ))}
       </div>
