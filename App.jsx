@@ -1,8 +1,36 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2 } from 'lucide-react';
-import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
+
+// --- DETECTOR DE ERROS PARA CELULAR (ERROR BOUNDARY) ---
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorMsg: '', errorStack: '' };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+  componentDidCatch(error, errorInfo) {
+    this.setState({ errorMsg: error.toString(), errorStack: errorInfo.componentStack });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', background: '#050508', color: '#ff3333', minHeight: '100vh', fontFamily: 'monospace' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '10px' }}>⚠️ Erro Encontrado:</h2>
+          <p style={{ fontSize: '14px', marginBottom: '20px', wordWrap: 'break-word' }}>{this.state.errorMsg}</p>
+          <h3 style={{ fontSize: '16px', color: 'white' }}>Onde o erro aconteceu:</h3>
+          <pre style={{ fontSize: '10px', color: '#A7ADBE', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>{this.state.errorStack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+// --------------------------------------------------------
 
 const HomeView = lazy(() => import('./HomeView'));
 const CatalogView = lazy(() => import('./CatalogView'));
@@ -11,8 +39,9 @@ const LibraryView = lazy(() => import('./LibraryView'));
 const ProfileView = lazy(() => import('./ProfileView'));
 const MangaDetailsView = lazy(() => import('./MangaDetailsView'));
 const ReaderView = lazy(() => import('./ReaderView'));
+const LoginView = lazy(() => import('./LoginView'));
 
-const App = () => {
+const AppContent = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedObraId, setSelectedObraId] = useState(null);
   const [selectedCapitulo, setSelectedCapitulo] = useState(null);
@@ -22,6 +51,7 @@ const App = () => {
   
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashFade, setSplashFade] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const [obras, setObras] = useState([]);
   const [biblioteca, setBiblioteca] = useState([]);
@@ -60,20 +90,11 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
-  // CARREGAMENTO REAL E DIRETO DO FIRESTORE
   useEffect(() => {
-    // 1. Escutar todas as obras diretamente da coleção do Firestore
     const unsubObras = onSnapshot(collection(db, 'obras'), (snapshot) => {
-      const listaObras = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setObras(listaObras);
-    }, (error) => {
-      console.error("Erro ao ler obras do Firestore:", error);
+      setObras(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    // 2. Escutar ranking de usuários ordenados por XP real
     const rankingQuery = query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(50));
     const unsubRanking = onSnapshot(rankingQuery, (snap) => {
       setTodosUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -81,12 +102,10 @@ const App = () => {
 
     if (!user) return;
 
-    // 3. Escutar biblioteca do usuário logado
     const unsubBib = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca'), (snap) => {
       setBiblioteca(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    // 4. Escutar perfil do usuário logado
     const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -100,7 +119,6 @@ const App = () => {
     return () => { unsubObras(); unsubRanking(); unsubBib(); unsubPerfil(); };
   }, [user]);
 
-  // Filtros inteligentes em memória no Front-end para alimentar a interface
   const { carouselData, obrasDestaque, obrasRecentes, obrasAtualizadas, catalogoFiltrado } = useMemo(() => {
     const carousel = obras.filter(o => o.isCarousel).slice(0, 5);
     const destaque = obras.filter(o => o.isDestaque);
@@ -110,6 +128,14 @@ const App = () => {
     
     return { carouselData: carousel, obrasDestaque: destaque, obrasRecentes: recentes, obrasAtualizadas: atualizadas, catalogoFiltrado: filtrado };
   }, [obras, searchQuery]);
+
+  useEffect(() => {
+    if (carouselData.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselData.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [carouselData.length]);
 
   const handleMangaClick = (id) => {
     setSelectedObraId(id);
@@ -128,9 +154,6 @@ const App = () => {
     .font-nunito { font-family: 'Nunito', sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .glow-gold { filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.45)); will-change: filter; }
-    .glow-silver { filter: drop-shadow(0 0 10px rgba(192, 192, 192, 0.35)); will-change: filter; }
-    .glow-bronze { filter: drop-shadow(0 0 8px rgba(205, 127, 50, 0.3)); will-change: filter; }
   `;
 
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader';
@@ -174,26 +197,17 @@ const App = () => {
 
           <main className={isFullScreenView ? "pb-0" : "pb-24"}>
             <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
-              {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
+              {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} />}
               
               {activeTab === 'details' && (
-                <MangaDetailsView 
-                  obra={obras.find(o => o.id === selectedObraId)} 
-                  onBack={() => setActiveTab('home')} 
-                  onReadChapter={handleReadChapter} 
-                  setSaveModal={setSaveModal} 
-                />
+                <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('home')} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} />
               )}
               {activeTab === 'reader' && (
-                <ReaderView 
-                  capitulo={selectedCapitulo} 
-                  obra={obras.find(o => o.id === selectedObraId)} 
-                  onBack={() => setActiveTab('details')} 
-                />
+                <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('details')} />
               )}
             </Suspense>
           </main>
@@ -216,4 +230,11 @@ const App = () => {
   );
 };
 
-export default App;
+// Exportando o App com o Detector de Erros em volta
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
+}
