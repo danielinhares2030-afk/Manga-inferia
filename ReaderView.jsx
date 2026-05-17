@@ -15,6 +15,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   const [horaInicioLeitura, setHoraInicioLeitura] = useState(Date.now()); 
   const [dropAnim, setDropAnim] = useState(false);
   const [paginaAtualPaginado, setPaginaAtualPaginado] = useState(0);
+  const [chapterToast, setChapterToast] = useState(null);
 
   const isManga = obra?.tipo?.toLowerCase().includes('manga');
   const isPaginado = perfil?.modoPaginado && isManga;
@@ -57,7 +58,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     
     let atualizacoes = { capitulosLidos: novosCapsLidos, tempoLendo: novoTempoLendo };
     
-    if (Math.random() <= 0.40) {
+    if (Math.random() <= 1.00) {
       atualizacoes.fragmentos = (perfil?.fragmentos || 0) + 1;
       setDropAnim(true); 
       setTimeout(() => setDropAnim(false), 4000); 
@@ -100,14 +101,26 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    setShowUI(true); setProgresso(0); setRollFeito(false); setIsTransitioning(false); setDropAnim(false); setPaginaAtualPaginado(0); setHoraInicioLeitura(Date.now()); setShowChaptersMenu(false);
+    setShowUI(true); 
+    setProgresso(0); 
+    setRollFeito(false); 
+    setIsTransitioning(false); 
+    setDropAnim(false); 
+    setPaginaAtualPaginado(0); 
+    setHoraInicioLeitura(Date.now()); 
+    setShowChaptersMenu(false);
+
+    setChapterToast(capitulo.numero);
+    const toastTimer = setTimeout(() => setChapterToast(null), 3000);
+
     const timer = setTimeout(() => setShowUI(false), 3500);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); clearTimeout(toastTimer); };
   }, [capitulo]);
 
   const handleMudarCapitulo = (cap) => {
-    setIsTransitioning(true); window.scrollTo(0, 0);
-    setTimeout(() => onReadChapter(cap), 800); 
+    setIsTransitioning(true); 
+    window.scrollTo(0, 0);
+    setTimeout(() => onReadChapter(cap), 300); 
   };
 
   const handlePrevPage = () => setPaginaAtualPaginado(p => Math.max(0, p - 1));
@@ -134,8 +147,14 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </div>
       )}
 
+      {chapterToast && !isTransitioning && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[999] bg-[#140505]/90 backdrop-blur-md border border-[#2A0A0A] px-6 py-2 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-top-5 duration-500 pointer-events-none">
+          <span className="text-[#A7ADBE] text-xs font-bold uppercase tracking-widest">Lendo Capítulo <span className="text-[#F5F7FF]">{chapterToast}</span></span>
+        </div>
+      )}
+
       {isTransitioning && (
-        <div className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center animate-in fade-in duration-200">
           <Loader2 className="w-16 h-16 text-[#CC0000] animate-spin mb-4" />
           <p className="text-[#CC0000] font-anime tracking-widest animate-pulse text-sm">ATRAVESSANDO INFERIA...</p>
         </div>
