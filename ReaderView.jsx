@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Settings, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Flame, X, Play } from 'lucide-react';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, increment } from 'firebase/firestore';
 import { db } from './firebase';
 
 const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => {
@@ -104,23 +104,26 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     setShowUI(true); 
     setProgresso(0); 
     setRollFeito(false); 
-    setIsTransitioning(false); 
     setDropAnim(false); 
     setPaginaAtualPaginado(0); 
     setHoraInicioLeitura(Date.now()); 
     setShowChaptersMenu(false);
 
-    setChapterToast(capitulo.numero);
-    const toastTimer = setTimeout(() => setChapterToast(null), 3000);
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setChapterToast(capitulo.numero);
+    }, 300);
 
-    const timer = setTimeout(() => setShowUI(false), 3500);
+    const toastTimer = setTimeout(() => setChapterToast(null), 3300);
+    const timer = setTimeout(() => setShowUI(false), 3800);
+    
     return () => { clearTimeout(timer); clearTimeout(toastTimer); };
   }, [capitulo]);
 
   const handleMudarCapitulo = (cap) => {
     setIsTransitioning(true); 
     window.scrollTo(0, 0);
-    setTimeout(() => onReadChapter(cap), 300); 
+    onReadChapter(cap); 
   };
 
   const handlePrevPage = () => setPaginaAtualPaginado(p => Math.max(0, p - 1));
@@ -148,7 +151,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       )}
 
       {chapterToast && !isTransitioning && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[999] bg-[#140505]/90 backdrop-blur-md border border-[#2A0A0A] px-6 py-2 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-top-5 duration-500 pointer-events-none">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[999] bg-[#140505]/90 backdrop-blur-md border border-[#2A0A0A] px-6 py-2 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-top-5 duration-300 pointer-events-none">
           <span className="text-[#A7ADBE] text-xs font-bold uppercase tracking-widest">Lendo Capítulo <span className="text-[#F5F7FF]">{chapterToast}</span></span>
         </div>
       )}
