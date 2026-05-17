@@ -7,7 +7,6 @@ export const MangaCard = React.memo(({ manga, variant = 'default', badge, isUpda
       <div className="relative aspect-[2/3] overflow-hidden">
         <img src={manga.capaUrl || manga.img || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=200"} alt={manga.nome || manga.title} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-90 group-hover:opacity-100" />
         
-        {/* Degradê mais forte para ler o texto */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity"></div>
         
         {badge && <div className="absolute top-2 left-2 text-[10px] font-bold text-white uppercase bg-[#CC0000] px-1.5 py-0.5 rounded z-10">{badge}</div>}
@@ -28,22 +27,9 @@ export const MangaCard = React.memo(({ manga, variant = 'default', badge, isUpda
           </button>
         )}
 
-        {/* Informações DENTRO do Card */}
         <div className="absolute bottom-0 left-0 w-full p-3 z-10 flex flex-col justify-end">
           <p className="text-[10px] text-[#CC0000] font-black uppercase tracking-widest mb-0.5 drop-shadow-md">{manga.tipo || 'Obra'}</p>
           <h4 className="font-nunito text-sm md:text-base font-bold text-[#F5F7FF] group-hover:text-white transition-colors line-clamp-2 leading-tight drop-shadow-lg">{manga.nome || manga.title}</h4>
-          
-          {variant === 'library' && manga.status === 'Lendo' && (
-            <div className="mt-2">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[9px] text-[#A7ADBE] font-bold">Cap. {manga.capAtual || 0}</span>
-                <span className="text-[9px] font-bold text-[#CC0000]">{manga.progresso || 0}%</span>
-              </div>
-              <div className="h-1 bg-[#1A0505] rounded-full overflow-hidden">
-                <div className="h-full bg-[#CC0000] shadow-[0_0_10px_#CC0000]" style={{width: `${manga.progresso || 0}%`}}></div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
