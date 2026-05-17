@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
-import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit, where, getDocs } from "firebase/firestore";
+import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
 import SaveModal from './SaveModal';
@@ -17,7 +17,7 @@ const SearchView = lazy(() => import('./SearchView'));
 
 const AppContent = () => {
   const [activeTab, setActiveTab] = useState('home');
-  const [previousTab, setPreviousTab] = useState('home');
+  const [lastMainTab, setLastMainTab] = useState('home');
   const [selectedObraId, setSelectedObraId] = useState(null);
   const [selectedCapitulo, setSelectedCapitulo] = useState(null);
 
@@ -53,7 +53,9 @@ const AppContent = () => {
 
   const changeTab = (newTab) => {
     if (activeTab !== newTab) {
-      setPreviousTab(activeTab);
+      if (['home', 'catalog', 'search', 'biblioteca', 'ranking', 'profile'].includes(activeTab)) {
+        setLastMainTab(activeTab);
+      }
       setActiveTab(newTab);
       window.history.pushState({ tab: newTab }, '', window.location.href);
     }
@@ -62,23 +64,19 @@ const AppContent = () => {
   useEffect(() => {
     window.history.replaceState({ tab: activeTab }, '', window.location.href);
     
-    const handlePopState = (event) => {
-      const stateTab = event.state?.tab;
-      
+    const handlePopState = () => {
       if (activeTab === 'reader') {
         setActiveTab('details');
-        window.history.pushState({ tab: 'details' }, '', window.location.href);
       } else if (activeTab === 'details' || activeTab === 'search') {
-        setActiveTab(previousTab !== 'reader' ? previousTab : 'home');
-        window.history.pushState({ tab: previousTab !== 'reader' ? previousTab : 'home' }, '', window.location.href);
+        setActiveTab(lastMainTab);
       } else if (activeTab !== 'home') {
         setActiveTab('home');
-        window.history.pushState({ tab: 'home' }, '', window.location.href);
       }
     };
+    
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [activeTab, previousTab]);
+  }, [activeTab, lastMainTab]);
 
   useEffect(() => {
     document.title = `Manga Inferia | ${activeTab.toUpperCase()}`;
@@ -243,8 +241,8 @@ const AppContent = () => {
               
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={changeTab} onMangaClick={handleResumeManga} />}
               
-              {activeTab === 'search' && <SearchView obras={obras} onBack={() => changeTab(previousTab)} onMangaClick={handleMangaClick} />}
-              {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => changeTab(previousTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
+              {activeTab === 'search' && <SearchView obras={obras} onBack={() => changeTab(lastMainTab)} onMangaClick={handleMangaClick} />}
+              {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => changeTab(lastMainTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
               {activeTab === 'reader' && <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => changeTab('details')} onReadChapter={handleReadChapter} user={user} perfil={perfil} />}
             </Suspense>
           </main>
