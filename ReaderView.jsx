@@ -109,13 +109,11 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     setHoraInicioLeitura(Date.now()); 
     setShowChaptersMenu(false);
 
-    setTimeout(() => {
-      setIsTransitioning(false);
-      setChapterToast(capitulo.numero);
-    }, 300);
+    setIsTransitioning(false);
+    setChapterToast(capitulo.numero);
 
-    const toastTimer = setTimeout(() => setChapterToast(null), 3300);
-    const timer = setTimeout(() => setShowUI(false), 3800);
+    const toastTimer = setTimeout(() => setChapterToast(null), 3000);
+    const timer = setTimeout(() => setShowUI(false), 3500);
     
     return () => { clearTimeout(timer); clearTimeout(toastTimer); };
   }, [capitulo]);
@@ -123,7 +121,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   const handleMudarCapitulo = (cap) => {
     setIsTransitioning(true); 
     window.scrollTo(0, 0);
-    onReadChapter(cap); 
+    setTimeout(() => onReadChapter(cap), 200); 
   };
 
   const handlePrevPage = () => setPaginaAtualPaginado(p => Math.max(0, p - 1));
