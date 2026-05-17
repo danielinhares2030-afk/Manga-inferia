@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Settings, AlertTriangle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, increment } from 'firebase/firestore';
 import { db } from './firebase';
 
 const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => {
@@ -9,7 +9,10 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   const [capituloAnterior, setCapituloAnterior] = useState(null);
   const [proximoCapitulo, setProximoCapitulo] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [rollFeito, setRollFeito] = useState(false); // Para não dropar 2x no mesmo capítulo
+  const [rollFeito, setRollFeito] = useState(false); 
+  
+  // Salva o momento exato que o usuário abriu o capítulo
+  const [horaInicioLeitura] = useState(Date.now()); 
 
   useEffect(() => {
     const buscarVizinhos = async () => {
@@ -30,7 +33,6 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     if (obra && capitulo) buscarVizinhos();
   }, [capitulo, obra]);
 
-  // Sistema de Progresso e Drops
   useEffect(() => {
     const handleScroll = async () => {
       const scrollTotal = document.documentElement.scrollTop;
@@ -38,38 +40,54 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       const percentual = alturaJanela > 0 ? (scrollTotal / alturaJanela) * 100 : 100;
       setProgresso(percentual);
 
-      // DROPS: Se chegou a 95% do capítulo e ainda não tentou a sorte
+      // QUANDO O USUÁRIO CHEGA NO FINAL DO CAPÍTULO (95%)
       if (percentual > 95 && !rollFeito && user) {
-        setRollFeito(true);
-        // 35% de chance de dropar um Fragmento Abissal
-        if (Math.random() <= 0.35) {
-          const qtdAtual = perfil.fragmentos || 0;
-          await setDoc(doc(db, 'usuarios', user.uid), { fragmentos: qtdAtual + 1 }, { merge: true });
-          if (window.mostrarAviso) window.mostrarAviso("💎 Você encontrou um Fragmento do Abismo!");
+        setRollFeito(true); // Impede que conte duplicado
+        
+        // 1. Calcula os minutos que ele passou lendo este capítulo (Mínimo de 1 minuto)
+        const tempoGastoMinutos = Math.max(1, Math.floor((Date.now() - horaInicioLeitura) / 60000));
+        
+        // 2. Prepara os dados para enviar pro Banco de Dados
+        const atualizacoesFirestore = {
+          capitulosLidos: increment(1), // Soma +1 nos capítulos lidos
+          tempoLendo: increment(tempoGastoMinutos) // Soma os minutos totais
+        };
+
+        // 3. Sistema de Drops (10% de chance)
+        if (Math.random() <= 0.10) {
+          atualizacoesFirestore.fragmentos = increment(1);
+          if (window.mostrarAviso) window.mostrarAviso("🔥 Você encontrou um Fragmento Infernal!");
+        }
+
+        // 4. Salva as estatísticas reais no perfil do usuário
+        try {
+          await setDoc(doc(db, 'usuarios', user.uid), atualizacoesFirestore, { merge: true });
+        } catch (error) {
+          console.error("Erro ao salvar estatísticas de leitura:", error);
         }
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [rollFeito, user, perfil]);
+  }, [rollFeito, user, horaInicioLeitura]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     setShowUI(true);
     setProgresso(0);
     setRollFeito(false);
-    setIsTransitioning(false); // Desliga a animação quando o capítulo carrega
+    setIsTransitioning(false); 
     const timer = setTimeout(() => setShowUI(false), 3500);
     return () => clearTimeout(timer);
   }, [capitulo]);
 
   const handleMudarCapitulo = (cap) => {
-    setIsTransitioning(true); // Liga a animação
+    setIsTransitioning(true); 
     window.scrollTo(0, 0);
     setTimeout(() => {
       onReadChapter(cap);
-    }, 800); // 0.8s de animação de carregamento
+    }, 800); 
   };
 
   if (!capitulo) return null;
@@ -77,16 +95,13 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
 
   return (
     <div className="bg-black min-h-screen relative font-nunito">
-      
-      {/* TELA DE LOADING AO PULAR CAPÍTULO */}
       {isTransitioning && (
         <div className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
           <Loader2 className="w-16 h-16 text-[#CC0000] animate-spin mb-4" />
-          <p className="text-[#CC0000] font-anime tracking-widest animate-pulse text-sm">VIAGEM NO ABISMO...</p>
+          <p className="text-[#CC0000] font-anime tracking-widest animate-pulse text-sm">ATRAVESSANDO INFERIA...</p>
         </div>
       )}
 
-      {/* Top Bar */}
       <div className={`fixed top-0 left-0 w-full bg-gradient-to-b from-black/90 to-transparent p-4 z-50 flex items-center justify-between transition-transform duration-300 ${showUI ? 'translate-y-0' : '-translate-y-full'}`}>
         <button onClick={onBack} className="w-10 h-10 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg">
           <ArrowLeft size={20} />
@@ -115,28 +130,17 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </div>
       )}
 
-      {/* Bottom Bar de Navegação e Progresso Melhorada */}
       <div className={`fixed bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/90 to-transparent pt-12 pb-6 px-4 z-50 transition-transform duration-300 ${showUI && paginas.length > 0 ? 'translate-y-0' : 'translate-y-full'}`}>
-        
-        {/* Barra de Progresso Real */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-[#140505]">
           <div className="h-full bg-gradient-to-r from-[#990000] to-[#FF3333] shadow-[0_0_15px_#CC0000]" style={{ width: `${progresso}%` }}></div>
         </div>
 
         <div className="max-w-md mx-auto flex items-center justify-between bg-[#0A0505] border border-[#2A0A0A] rounded-2xl p-1.5 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-          <button 
-            onClick={() => handleMudarCapitulo(capituloAnterior)} disabled={!capituloAnterior}
-            className="flex items-center gap-1 px-4 py-2 rounded-xl disabled:opacity-30 text-[#A7ADBE] hover:bg-[#140505] hover:text-[#CC0000] transition-colors font-bold text-[10px] uppercase"
-          >
+          <button onClick={() => handleMudarCapitulo(capituloAnterior)} disabled={!capituloAnterior} className="flex items-center gap-1 px-4 py-2 rounded-xl disabled:opacity-30 text-[#A7ADBE] hover:bg-[#140505] hover:text-[#CC0000] transition-colors font-bold text-[10px] uppercase">
             <ChevronLeft size={20} /> Anterior
           </button>
-
           <span className="text-white text-[10px] font-bold uppercase tracking-widest px-2">{Math.round(progresso)}% CONCLUÍDO</span>
-
-          <button 
-            onClick={() => handleMudarCapitulo(proximoCapitulo)} disabled={!proximoCapitulo}
-            className="flex items-center gap-1 px-4 py-2 rounded-xl disabled:opacity-30 text-[#A7ADBE] hover:bg-[#140505] hover:text-[#CC0000] transition-colors font-bold text-[10px] uppercase"
-          >
+          <button onClick={() => handleMudarCapitulo(proximoCapitulo)} disabled={!proximoCapitulo} className="flex items-center gap-1 px-4 py-2 rounded-xl disabled:opacity-30 text-[#A7ADBE] hover:bg-[#140505] hover:text-[#CC0000] transition-colors font-bold text-[10px] uppercase">
             Próximo <ChevronRight size={20} />
           </button>
         </div>
