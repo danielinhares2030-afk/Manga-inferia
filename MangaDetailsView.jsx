@@ -8,11 +8,16 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
   const [loading, setLoading] = useState(true);
   const [avaliando, setAvaliando] = useState(false);
   
-  // Variáveis para a animação perfeita das estrelas
   const [hoverRating, setHoverRating] = useState(0);
   const [selectedRating, setSelectedRating] = useState(0);
 
-  const isSaved = biblioteca?.some(b => b.id === obra?.id);
+  const obraSalva = biblioteca?.find(b => b.id === obra?.id);
+  const isSaved = !!obraSalva;
+  const minhaNotaAtual = obraSalva?.minhaNota || 0;
+
+  useEffect(() => {
+    setSelectedRating(minhaNotaAtual);
+  }, [minhaNotaAtual]);
 
   useEffect(() => {
     const carregarCapitulosFirestore = async () => {
@@ -22,28 +27,57 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
         const capsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         capsData.sort((a, b) => Number(b.numero) - Number(a.numero));
         setCapitulos(capsData);
-      } catch (err) { console.error(err); } finally { setLoading(false); }
+      } catch (err) { 
+        console.error(err); 
+      } finally { 
+        setLoading(false); 
+      }
     };
-    if (obra) { carregarCapitulosFirestore(); window.scrollTo(0, 0); }
+    if (obra) { 
+      carregarCapitulosFirestore(); 
+      window.scrollTo(0, 0); 
+    }
   }, [obra]);
 
   const handleAvaliar = async (nota) => {
     if (!user) return window.mostrarAviso("Faça login para avaliar!", 'error');
     if (avaliando) return;
     setAvaliando(true);
-    setSelectedRating(nota); // Trava a estrela visualmente
+    setSelectedRating(nota); 
     
     try {
       const somaAtual = Number(obra.somaNotas) || 0;
       const totalAtual = Number(obra.totalNotas) || 0;
-      const novaSoma = somaAtual + nota;
-      const novoTotal = totalAtual + 1;
-      const novaMedia = (novaSoma / novoTotal).toFixed(1);
+      
+      let novaSoma, novoTotal;
 
-      await setDoc(doc(db, 'obras', obra.id), { somaNotas: novaSoma, totalNotas: novoTotal, rating: novaMedia }, { merge: true });
+      if (minhaNotaAtual > 0) {
+        novaSoma = somaAtual - minhaNotaAtual + nota;
+        novoTotal = totalAtual;
+      } else {
+        novaSoma = somaAtual + nota;
+        novoTotal = totalAtual + 1;
+      }
+
+      const novaMedia = novoTotal > 0 ? (novaSoma / novoTotal).toFixed(1) : 0;
+
+      await setDoc(doc(db, 'obras', obra.id), { 
+        somaNotas: novaSoma, 
+        totalNotas: novoTotal, 
+        rating: novaMedia 
+      }, { merge: true });
+
+      await setDoc(doc(db, 'usuarios', user.uid, 'biblioteca', obra.id), {
+        id: obra.id,
+        nome: obra.nome,
+        capaUrl: obra.capaUrl,
+        minhaNota: nota
+      }, { merge: true });
+
       if (window.mostrarAviso) window.mostrarAviso(`Você avaliou com ${nota} Estrelas!`);
     } catch (error) {
       console.error(error);
+      setSelectedRating(minhaNotaAtual); 
       if (window.mostrarAviso) window.mostrarAviso("O Firestore está bloqueando (Adicione a Rule).", 'error');
     } finally {
       setAvaliando(false);
@@ -78,7 +112,7 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={() => capitulos.length > 0 && onReadChapter(capitulos[capitulos.length - 1])} disabled={capitulos.length === 0} className="flex-1 bg-gradient-to-r from-[#CC0000] to-[#990000] text-white py-3.5 rounded-xl font-bold font-teko text-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,0,0,0.4)] disabled:opacity-50 tracking-wider">
+          <button onClick={() => capitulos.length > 0 && onReadChapter(capitulos[capitulos.length - 1])} disabled={capitulos.length === 0} className="flex-1 bg-gradient-to-r from-[#CC0000] to-[#990000] text-white py-3.5 rounded-xl font-bold font-teko text-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,0,0,0.4)] hover:scale-[1.02] transition-transform disabled:opacity-50 tracking-wider">
             <Play size={20} fill="currentColor" className="ml-0.5" /> {capitulos.length > 0 ? 'COMEÇAR A LER' : 'SEM CAPÍTULOS'}
           </button>
           <button onClick={() => setSaveModal({ isOpen: true, obraId: obra.id })} className={`w-14 h-14 border rounded-xl flex items-center justify-center transition-colors shadow-lg ${isSaved ? 'bg-[#CC0000]/20 border-[#CC0000] text-[#CC0000]' : 'bg-[#140505] border-[#2A0A0A] text-[#A7ADBE] hover:text-[#CC0000] hover:border-[#CC0000]/50'}`}>
@@ -86,7 +120,6 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
           </button>
         </div>
 
-        {/* COMPONENTE DE AVALIAR CORRIGIDO (Animação Perfeita) */}
         <div className="mt-6 bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-xl flex items-center justify-between">
           <span className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider">Avalie esta obra:</span>
           <div className="flex gap-1">
