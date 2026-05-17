@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
@@ -20,9 +20,7 @@ const AppContent = () => {
   const [selectedObraId, setSelectedObraId] = useState(null);
   const [selectedCapitulo, setSelectedCapitulo] = useState(null);
 
-  // Sistema de Notificações Profissional
   const [toast, setToast] = useState({ msg: '', type: 'success' });
-
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [splashVisible, setSplashVisible] = useState(true);
@@ -39,13 +37,12 @@ const AppContent = () => {
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000',
     fragmentos: 0, tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0,
-    leituraHD: false, scrollSuave: true // Novas configurações de sistema
+    leituraHD: false, scrollSuave: true
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [saveModal, setSaveModal] = useState({ isOpen: false, obraId: null });
 
-  // Dispara o Toast com tipo (sucesso ou erro)
   useEffect(() => {
     window.mostrarAviso = (msg, type = 'success') => {
       setToast({ msg, type });
@@ -83,6 +80,10 @@ const AppContent = () => {
           const userSnap = await getDoc(userRef);
           if (!userSnap.exists()) await setDoc(userRef, perfil);
         } catch (error) { console.warn(error); }
+      } else {
+        // Limpa o perfil se sair da conta para não bugar o próximo login
+        setPerfil({ nome: 'Visitante', xp: 0, nivel: 1 });
+        setBiblioteca([]);
       }
     });
     return () => unsubscribe();
@@ -101,7 +102,6 @@ const AppContent = () => {
     if (!user) return;
 
     const unsubBib = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca'), (snap) => {
-      // Ordena a biblioteca pelo último lido mais recente (útil pro Histórico)
       const bibData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       bibData.sort((a, b) => new Date(b.ultimoLidoEm || 0) - new Date(a.ultimoLidoEm || 0));
       setBiblioteca(bibData);
@@ -124,7 +124,6 @@ const AppContent = () => {
     const carousel = obras.filter(o => o.isCarousel).slice(0, 5);
     const destaque = [...obras].sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0)).slice(0, 10);
     const recentes = obras.filter(o => o.isRecente);
-    // As atualizadas agora vão para a HomeView com paginação!
     const atualizadas = obras.filter(o => o.isAtualizado).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
     const filtrado = obras.filter(o => (o.nome || '').toLowerCase().includes(searchQuery.toLowerCase()));
     
@@ -138,7 +137,9 @@ const AppContent = () => {
   }, [carouselData.length]);
 
   const handleMangaClick = (id) => {
-    if (activeTab === 'home' || activeTab === 'catalog' || activeTab === 'biblioteca') setPreviousTab(activeTab);
+    if (activeTab === 'home' || activeTab === 'catalog' || activeTab === 'biblioteca' || activeTab === 'profile') {
+      setPreviousTab(activeTab);
+    }
     setSelectedObraId(id);
     setActiveTab('details');
   };
@@ -163,7 +164,6 @@ const AppContent = () => {
     <div className="min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      {/* NOVO AVISO (TOAST) ESTILOSO */}
       <div className={`fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-5 py-3.5 rounded-xl border font-bold shadow-2xl transition-all duration-300 w-max max-w-[90vw] ${toast.msg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505] border-[#CC0000] text-[#FF3333]' : 'bg-[#0A0A0A] border-[#00CC66]/50 text-[#00FF88]'}`}>
         {toast.type === 'error' ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
         <span className="text-sm tracking-wide">{toast.msg}</span>
@@ -190,8 +190,13 @@ const AppContent = () => {
                 <h1 className="font-anime text-lg md:text-xl shadow-black drop-shadow-md">
                   MANGA<span className="text-[#CC0000]">INFERIA</span>
                 </h1>
-                <div onClick={() => setActiveTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
-                  <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
+                <div className="flex items-center gap-4">
+                  {/* LUPA DE PESQUISA ADICIONADA */}
+                  <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => setActiveTab('catalog')} />
+                  
+                  <div onClick={() => setActiveTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
+                    <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
+                  </div>
                 </div>
               </div>
             </nav>
@@ -203,7 +208,10 @@ const AppContent = () => {
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
-              {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} />}
+              
+              {/* ProfileView agora recebe onMangaClick para abrir do histórico */}
+              {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} onMangaClick={handleMangaClick} />}
+              
               {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => setActiveTab(previousTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
               {activeTab === 'reader' && <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('details')} onReadChapter={handleReadChapter} user={user} perfil={perfil} />}
             </Suspense>
