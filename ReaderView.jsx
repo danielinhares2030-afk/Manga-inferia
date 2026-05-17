@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Flame } from 'lucide-react';
+import { ArrowLeft, Settings, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Flame, X, Play } from 'lucide-react';
 import { collection, query, where, getDocs, doc, setDoc, increment } from 'firebase/firestore';
 import { db } from './firebase';
 
 const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => {
   const [showUI, setShowUI] = useState(true);
   const [progresso, setProgresso] = useState(0);
+  const [todosCapitulos, setTodosCapitulos] = useState([]);
   const [capituloAnterior, setCapituloAnterior] = useState(null);
   const [proximoCapitulo, setProximoCapitulo] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showChaptersMenu, setShowChaptersMenu] = useState(false);
   const [rollFeito, setRollFeito] = useState(false); 
   const [horaInicioLeitura] = useState(Date.now()); 
   
-  // Animação visual do Drop flutuante (não atrapalha a leitura)
   const [dropAnim, setDropAnim] = useState(false);
 
   useEffect(() => {
     const buscarVizinhosESalvarProgresso = async () => {
-      // 1. SALVA O HISTÓRICO CORRETO (Sem o bug do Cap 0)
       if (user && capitulo) {
         const numeroCorreto = Number(capitulo.numero) || capitulo.numero;
         setDoc(doc(db, 'usuarios', user.uid, 'biblioteca', obra.id), {
@@ -32,6 +32,9 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         const snap = await getDocs(q);
         const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         lista.sort((a, b) => Number(a.numero) - Number(b.numero));
+        
+        setTodosCapitulos(lista);
+
         const currentIndex = lista.findIndex(c => c.id === capitulo.id);
         setCapituloAnterior(currentIndex > 0 ? lista[currentIndex - 1] : null);
         setProximoCapitulo(currentIndex < lista.length - 1 ? lista[currentIndex + 1] : null);
@@ -47,22 +50,19 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       const percentual = alturaJanela > 0 ? (scrollTotal / alturaJanela) * 100 : 100;
       setProgresso(percentual);
 
-      // ATUALIZA PROGRESSO EM TEMPO REAL NO HISTÓRICO (Se passou de 5%)
       if (user && percentual > 5 && percentual % 10 < 2) { 
         setDoc(doc(db, 'usuarios', user.uid, 'biblioteca', obra.id), { progresso: Math.round(percentual) }, { merge: true });
       }
 
-      // SISTEMA DE DROP (40% de chance no final do capítulo)
       if (percentual > 95 && !rollFeito && user) {
         setRollFeito(true); 
         const tempoGastoMinutos = Math.max(1, Math.floor((Date.now() - horaInicioLeitura) / 60000));
         const atualizacoes = { capitulosLidos: increment(1), tempoLendo: increment(tempoGastoMinutos) };
         
-        // Sorteio de 40%
         if (Math.random() <= 0.40) {
           atualizacoes.fragmentos = increment(1);
-          setDropAnim(true); // Aciona a animação de Fogo!
-          setTimeout(() => setDropAnim(false), 4000); // Some após 4 segundos
+          setDropAnim(true); 
+          setTimeout(() => setDropAnim(false), 4000); 
         }
         await setDoc(doc(db, 'usuarios', user.uid), atualizacoes, { merge: true }).catch(err => console.error(err));
       }
@@ -73,7 +73,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    setShowUI(true); setProgresso(0); setRollFeito(false); setIsTransitioning(false); setDropAnim(false);
+    setShowUI(true); setProgresso(0); setRollFeito(false); setIsTransitioning(false); setDropAnim(false); setShowChaptersMenu(false);
     const timer = setTimeout(() => setShowUI(false), 3500);
     return () => clearTimeout(timer);
   }, [capitulo]);
@@ -89,7 +89,6 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   return (
     <div className={`bg-black min-h-screen relative font-nunito ${perfil?.scrollSuave ? 'scroll-smooth' : ''}`}>
       
-      {/* ANIMAÇÃO FLUTUANTE DE DROP (Não atrapalha a leitura) */}
       {dropAnim && (
         <div className="fixed top-24 right-4 z-[9999] bg-[#140505]/90 backdrop-blur-md border border-[#CC0000] p-3 rounded-2xl shadow-[0_0_20px_rgba(204,0,0,0.6)] animate-in slide-in-from-right fade-in duration-500 flex items-center gap-3">
           <Flame className="text-[#FF3333] animate-pulse" size={24} />
@@ -107,6 +106,32 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </div>
       )}
 
+      {showChaptersMenu && (
+        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-md flex flex-col p-4 animate-in fade-in duration-200">
+          <div className="flex justify-between items-center mb-6 mt-4">
+            <h3 className="text-xl font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2">CAPÍTULOS</h3>
+            <button onClick={() => setShowChaptersMenu(false)} className="w-10 h-10 bg-[#140505] border border-[#2A0A0A] rounded-full flex items-center justify-center text-[#A7ADBE] hover:text-white transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="overflow-y-auto hide-scrollbar space-y-2 flex-1 pb-10">
+            {todosCapitulos.slice().reverse().map((cap) => (
+              <div 
+                key={cap.id} 
+                onClick={() => { setShowChaptersMenu(false); handleMudarCapitulo(cap); }} 
+                className={`p-4 rounded-xl flex items-center justify-between cursor-pointer transition-colors border ${cap.id === capitulo.id ? 'bg-[#CC0000]/20 border-[#CC0000] text-white' : 'bg-[#140505] border-[#2A0A0A] text-[#A7ADBE] hover:border-[#CC0000]/50'}`}
+              >
+                <div className="flex flex-col">
+                  <span className="font-bold text-sm">Capítulo {cap.numero}</span>
+                  {cap.titulo && <span className="text-[10px] uppercase font-bold mt-0.5 opacity-70">{cap.titulo}</span>}
+                </div>
+                {cap.id === capitulo.id ? <div className="w-2 h-2 bg-[#CC0000] rounded-full shadow-[0_0_8px_#CC0000]"></div> : <Play size={14} />}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className={`fixed top-0 left-0 w-full bg-gradient-to-b from-black/90 to-transparent p-4 z-50 flex items-center justify-between transition-transform duration-300 ${showUI ? 'translate-y-0' : '-translate-y-full'}`}>
         <button onClick={onBack} className="w-10 h-10 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg">
           <ArrowLeft size={20} />
@@ -115,7 +140,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
           <h2 className="text-white text-sm font-bold truncate max-w-[200px]">{obra?.nome || "Obra"}</h2>
           <p className="text-[#CC0000] text-[10px] uppercase font-bold tracking-widest">Capítulo {capitulo.numero}</p>
         </div>
-        <button className="w-10 h-10 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg">
+        <button onClick={() => setShowChaptersMenu(true)} className="w-10 h-10 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg">
           <Settings size={18} />
         </button>
       </div>
@@ -140,14 +165,17 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
           <button onClick={() => handleMudarCapitulo(capituloAnterior)} disabled={!capituloAnterior} className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-30 text-[#A7ADBE] hover:bg-[#140505] hover:text-[#CC0000] transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <span className="text-white text-[10px] font-bold uppercase tracking-widest px-2">{capitulo.numero} / {proximoCapitulo ? proximoCapitulo.numero : 'FIM'}</span>
+          
+          <span className="text-white text-[10px] font-bold uppercase tracking-widest px-2">
+            Capítulo {capitulo.numero} {!proximoCapitulo && <span className="text-[#CC0000] ml-1">- FIM</span>}
+          </span>
+          
           <button onClick={() => handleMudarCapitulo(proximoCapitulo)} disabled={!proximoCapitulo} className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-30 text-[#A7ADBE] hover:bg-[#140505] hover:text-[#CC0000] transition-colors">
             <ChevronRight size={20} />
           </button>
         </div>
       </div>
 
-      {/* BARRA FINA DE PROGRESSO NA BASE ABSOLUTA DO CELULAR */}
       <div className="fixed bottom-0 left-0 w-full h-[3px] bg-[#1A0505] z-50">
         <div className="h-full bg-gradient-to-r from-[#CC0000] to-[#FF3333] transition-all duration-150" style={{ width: `${progresso}%` }}></div>
       </div>
