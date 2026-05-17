@@ -13,6 +13,7 @@ const ProfileView = lazy(() => import('./ProfileView'));
 const MangaDetailsView = lazy(() => import('./MangaDetailsView'));
 const ReaderView = lazy(() => import('./ReaderView'));
 const LoginView = lazy(() => import('./LoginView'));
+const SearchView = lazy(() => import('./SearchView'));
 
 const AppContent = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -56,6 +57,7 @@ const AppContent = () => {
       window.history.pushState(null, '', window.location.href);
       if (activeTab === 'reader') setActiveTab('details');
       else if (activeTab === 'details') setActiveTab(previousTab);
+      else if (activeTab === 'search') setActiveTab(previousTab);
       else if (activeTab !== 'home') setActiveTab('home');
     };
     window.addEventListener('popstate', handlePopState);
@@ -81,7 +83,6 @@ const AppContent = () => {
           if (!userSnap.exists()) await setDoc(userRef, perfil);
         } catch (error) { console.warn(error); }
       } else {
-        // Limpa o perfil se sair da conta para não bugar o próximo login
         setPerfil({ nome: 'Visitante', xp: 0, nivel: 1 });
         setBiblioteca([]);
       }
@@ -137,7 +138,7 @@ const AppContent = () => {
   }, [carouselData.length]);
 
   const handleMangaClick = (id) => {
-    if (activeTab === 'home' || activeTab === 'catalog' || activeTab === 'biblioteca' || activeTab === 'profile') {
+    if (activeTab === 'home' || activeTab === 'catalog' || activeTab === 'biblioteca' || activeTab === 'profile' || activeTab === 'search') {
       setPreviousTab(activeTab);
     }
     setSelectedObraId(id);
@@ -158,7 +159,7 @@ const AppContent = () => {
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   `;
 
-  const isFullScreenView = activeTab === 'details' || activeTab === 'reader';
+  const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search';
 
   return (
     <div className="min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
@@ -191,9 +192,7 @@ const AppContent = () => {
                   MANGA<span className="text-[#CC0000]">INFERIA</span>
                 </h1>
                 <div className="flex items-center gap-4">
-                  {/* LUPA DE PESQUISA ADICIONADA */}
-                  <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => setActiveTab('catalog')} />
-                  
+                  <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => { setPreviousTab(activeTab); setActiveTab('search'); }} />
                   <div onClick={() => setActiveTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
                     <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
                   </div>
@@ -208,10 +207,9 @@ const AppContent = () => {
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
-              
-              {/* ProfileView agora recebe onMangaClick para abrir do histórico */}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} onMangaClick={handleMangaClick} />}
               
+              {activeTab === 'search' && <SearchView obras={obras} onBack={() => setActiveTab(previousTab)} onMangaClick={handleMangaClick} />}
               {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => setActiveTab(previousTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
               {activeTab === 'reader' && <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('details')} onReadChapter={handleReadChapter} user={user} perfil={perfil} />}
             </Suspense>
