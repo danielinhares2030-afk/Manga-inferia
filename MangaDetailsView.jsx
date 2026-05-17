@@ -12,8 +12,9 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
   const [selectedRating, setSelectedRating] = useState(0);
 
   const obraSalva = biblioteca?.find(b => b.id === obra?.id);
-  const isSaved = !!obraSalva;
+  const isSaved = obraSalva && obraSalva.status && obraSalva.status !== 'Dropado';
   const minhaNotaAtual = obraSalva?.minhaNota || 0;
+  const capAtualNumber = Number(obraSalva?.capAtual) || 0;
 
   useEffect(() => {
     setSelectedRating(minhaNotaAtual);
@@ -159,17 +160,22 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
             <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#CC0000]" /></div>
           ) : (
             <div className="space-y-2">
-              {capitulos.map((cap) => (
-                <div key={cap.id} onClick={() => onReadChapter(cap)} className="bg-[#140505] border border-[#2A0A0A] p-4 rounded-xl flex items-center justify-between hover:border-[#CC0000]/50 cursor-pointer transition-colors group">
-                  <div className="flex flex-col">
-                    <span className="text-[#F5F7FF] font-bold text-sm group-hover:text-[#CC0000] transition-colors">Capítulo {cap.numero}</span>
-                    {cap.titulo && <span className="text-[#A7ADBE] text-[10px] uppercase font-bold mt-0.5">{cap.titulo}</span>}
+              {capitulos.map((cap) => {
+                const isLido = Number(cap.numero) <= capAtualNumber;
+                return (
+                  <div key={cap.id} onClick={() => onReadChapter(cap)} className={`bg-[#140505] border border-[#2A0A0A] p-4 rounded-xl flex items-center justify-between hover:border-[#CC0000]/50 cursor-pointer transition-colors group ${isLido ? 'opacity-50' : ''}`}>
+                    <div className="flex flex-col">
+                      <span className={`font-bold text-sm transition-colors ${isLido ? 'text-[#A7ADBE] line-through decoration-[#CC0000]/50' : 'text-[#F5F7FF] group-hover:text-[#CC0000]'}`}>
+                        Capítulo {cap.numero} {isLido && <span className="text-[9px] text-[#00FF88] ml-2 uppercase no-underline inline-block border border-[#00FF88]/30 px-1.5 py-0.5 rounded">Lido</span>}
+                      </span>
+                      {cap.titulo && <span className="text-[#A7ADBE] text-[10px] uppercase font-bold mt-0.5">{cap.titulo}</span>}
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-[#0A0505] border border-[#2A0A0A] flex items-center justify-center text-[#A7ADBE] group-hover:bg-[#CC0000] group-hover:text-white transition-colors">
+                      <Play size={12} fill="currentColor" className="ml-0.5" />
+                    </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-[#0A0505] border border-[#2A0A0A] flex items-center justify-center text-[#A7ADBE] group-hover:bg-[#CC0000] group-hover:text-white transition-colors">
-                    <Play size={12} fill="currentColor" className="ml-0.5" />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
