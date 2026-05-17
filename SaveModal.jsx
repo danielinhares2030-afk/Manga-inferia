@@ -24,7 +24,7 @@ const SaveModal = ({ isOpen, onClose, obra, user }) => {
       onClose();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      if (window.mostrarAviso) window.mostrarAviso("Erro ao salvar obra!");
+      if (window.mostrarAviso) window.mostrarAviso("Erro ao salvar obra!", "error");
     }
   };
 
