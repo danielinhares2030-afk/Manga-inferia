@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Star, Play, Bookmark, List, Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs, doc, setDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModal, user }) => {
@@ -23,14 +23,18 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
     if (obra) { carregarCapitulosFirestore(); window.scrollTo(0, 0); }
   }, [obra]);
 
-  // SISTEMA DE AVALIAÇÃO (RATING)
+  // SISTEMA DE AVALIAÇÃO BLINDADO
   const handleAvaliar = async (nota) => {
-    if (!user || avaliando) return;
+    if (!user) {
+      if (window.mostrarAviso) window.mostrarAviso("Faça login para avaliar!");
+      return;
+    }
+    if (avaliando) return;
     setAvaliando(true);
+    
     try {
-      // Salva a nota no banco de dados da obra
-      const somaAtual = obra.somaNotas || 0;
-      const totalAtual = obra.totalNotas || 0;
+      const somaAtual = Number(obra.somaNotas) || 0;
+      const totalAtual = Number(obra.totalNotas) || 0;
       const novaSoma = somaAtual + nota;
       const novoTotal = totalAtual + 1;
       const novaMedia = (novaSoma / novoTotal).toFixed(1);
@@ -44,7 +48,8 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
       if (window.mostrarAviso) window.mostrarAviso(`Você avaliou com ${nota} Estrelas!`);
     } catch (error) {
       console.error(error);
-      if (window.mostrarAviso) window.mostrarAviso("Erro ao avaliar.");
+      // MENSAGEM CRÍTICA SE FOR ERRO DE PERMISSÃO
+      if (window.mostrarAviso) window.mostrarAviso("Erro: O Firestore está bloqueando a edição (Rules).");
     } finally {
       setAvaliando(false);
     }
@@ -86,7 +91,6 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
           </button>
         </div>
 
-        {/* COMPONENTE DE AVALIAR (Dar Nota) */}
         <div className="mt-6 bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-xl flex items-center justify-between">
           <span className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider">Sua Nota:</span>
           <div className="flex gap-1">
