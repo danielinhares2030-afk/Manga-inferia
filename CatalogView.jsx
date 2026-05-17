@@ -43,7 +43,7 @@ const CatalogView = ({ searchQuery, setSearchQuery, catalogoFiltrado, setSaveMod
           <Hash className="text-[#CC0000]" size={28} /> CATÁLOGO
         </h2>
         
-        <div className="flex gap-3">
+        <div className="flex gap-3 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A7ADBE]" size={18} />
             <input 
@@ -137,7 +137,7 @@ const CatalogView = ({ searchQuery, setSearchQuery, catalogoFiltrado, setSaveMod
                 onClick={limparFiltros}
                 className="flex-1 py-3.5 rounded-xl border border-[#2A0A0A] text-[#A7ADBE] font-bold text-xs uppercase tracking-wider hover:text-white hover:bg-[#140505] transition-colors"
               >
-                Limpar Filtros
+                Limpar
               </button>
               <button 
                 onClick={() => setShowFiltros(false)}
