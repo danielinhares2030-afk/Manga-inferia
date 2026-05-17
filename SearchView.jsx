@@ -1,5 +1,3 @@
-// SearchView.jsx
-
 import React, { useState, useMemo } from 'react';
 import { Search, ArrowLeft } from 'lucide-react';
 import { MangaCard } from './UIComponents';
