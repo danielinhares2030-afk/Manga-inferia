@@ -111,7 +111,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
           </div>
 
           <div className="flex gap-2 overflow-x-auto hide-scrollbar mb-6 pb-2">
-            {['Todos', 'Manhwa', 'Manga', 'Manhua', 'Shoujo'].map(f => (
+            {['Todos', 'Manhwa', 'Mangá', 'Manhua', 'Shoujo'].map(f => (
               <button 
                 key={f} 
                 onClick={() => { setFiltro(f); setPaginaAtual(1); }}
