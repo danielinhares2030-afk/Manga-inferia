@@ -120,6 +120,12 @@ const MangaDetailsView = ({ obra, biblioteca, onBack, onReadChapter, setSaveModa
           </button>
         </div>
 
+        <div className="flex flex-wrap gap-2 mt-6">
+          {obra.generos && obra.generos.map(gen => (
+            <span key={gen} className="bg-[#140505] border border-[#2A0A0A] text-[#A7ADBE] px-3 py-1 rounded-full text-[11px] font-bold tracking-wider">{gen}</span>
+          ))}
+        </div>
+
         <div className="mt-6 bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-xl flex items-center justify-between">
           <span className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider">Avalie esta obra:</span>
           <div className="flex gap-1">
