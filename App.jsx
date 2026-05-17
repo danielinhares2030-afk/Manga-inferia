@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
-import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
+import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit, where, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
 import SaveModal from './SaveModal';
@@ -38,7 +38,7 @@ const AppContent = () => {
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000',
     fragmentos: 0, tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0,
-    leituraHD: false, scrollSuave: true
+    modoPaginado: false, scrollSuave: true
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,14 +51,30 @@ const AppContent = () => {
     };
   }, []);
 
+  const changeTab = (newTab) => {
+    if (activeTab !== newTab) {
+      setPreviousTab(activeTab);
+      setActiveTab(newTab);
+      window.history.pushState({ tab: newTab }, '', window.location.href);
+    }
+  };
+
   useEffect(() => {
-    window.history.pushState(null, '', window.location.href);
-    const handlePopState = () => {
-      window.history.pushState(null, '', window.location.href);
-      if (activeTab === 'reader') setActiveTab('details');
-      else if (activeTab === 'details') setActiveTab(previousTab);
-      else if (activeTab === 'search') setActiveTab(previousTab);
-      else if (activeTab !== 'home') setActiveTab('home');
+    window.history.replaceState({ tab: activeTab }, '', window.location.href);
+    
+    const handlePopState = (event) => {
+      const stateTab = event.state?.tab;
+      
+      if (activeTab === 'reader') {
+        setActiveTab('details');
+        window.history.pushState({ tab: 'details' }, '', window.location.href);
+      } else if (activeTab === 'details' || activeTab === 'search') {
+        setActiveTab(previousTab !== 'reader' ? previousTab : 'home');
+        window.history.pushState({ tab: previousTab !== 'reader' ? previousTab : 'home' }, '', window.location.href);
+      } else if (activeTab !== 'home') {
+        setActiveTab('home');
+        window.history.pushState({ tab: 'home' }, '', window.location.href);
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -138,16 +154,33 @@ const AppContent = () => {
   }, [carouselData.length]);
 
   const handleMangaClick = (id) => {
-    if (activeTab === 'home' || activeTab === 'catalog' || activeTab === 'biblioteca' || activeTab === 'profile' || activeTab === 'search') {
-      setPreviousTab(activeTab);
-    }
     setSelectedObraId(id);
-    setActiveTab('details');
+    changeTab('details');
   };
 
   const handleReadChapter = (capitulo) => {
     setSelectedCapitulo(capitulo);
-    setActiveTab('reader');
+    changeTab('reader');
+  };
+
+  const handleResumeManga = async (obraId, capId) => {
+    setSelectedObraId(obraId);
+    if (!capId) {
+      changeTab('details');
+      return;
+    }
+    try {
+      const docRef = doc(db, 'capitulos', capId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setSelectedCapitulo({ id: docSnap.id, ...docSnap.data() });
+        changeTab('reader');
+      } else {
+        changeTab('details');
+      }
+    } catch (err) {
+      changeTab('details');
+    }
   };
 
   const globais = `
@@ -192,8 +225,8 @@ const AppContent = () => {
                   MANGA<span className="text-[#CC0000]">INFERIA</span>
                 </h1>
                 <div className="flex items-center gap-4">
-                  <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => { setPreviousTab(activeTab); setActiveTab('search'); }} />
-                  <div onClick={() => setActiveTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
+                  <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => changeTab('search')} />
+                  <div onClick={() => changeTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
                     <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
                   </div>
                 </div>
@@ -205,13 +238,14 @@ const AppContent = () => {
             <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
-              {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={setActiveTab} />}
-              {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} />}
-              {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={setActiveTab} onMangaClick={handleMangaClick} />}
+              {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={changeTab} />}
+              {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               
-              {activeTab === 'search' && <SearchView obras={obras} onBack={() => setActiveTab(previousTab)} onMangaClick={handleMangaClick} />}
-              {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => setActiveTab(previousTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
-              {activeTab === 'reader' && <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => setActiveTab('details')} onReadChapter={handleReadChapter} user={user} perfil={perfil} />}
+              {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={changeTab} onMangaClick={handleResumeManga} />}
+              
+              {activeTab === 'search' && <SearchView obras={obras} onBack={() => changeTab(previousTab)} onMangaClick={handleMangaClick} />}
+              {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => changeTab(previousTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
+              {activeTab === 'reader' && <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => changeTab('details')} onReadChapter={handleReadChapter} user={user} perfil={perfil} />}
             </Suspense>
           </main>
 
@@ -221,7 +255,7 @@ const AppContent = () => {
             <div className="fixed bottom-0 left-0 w-full z-40 px-4 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
               <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto">
                 {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
+                  <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
                     <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
                     <span className="text-[9px] font-bold uppercase tracking-widest font-teko">{tab.label}</span>
                   </button>
