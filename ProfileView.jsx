@@ -8,7 +8,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const [editProfileModal, setEditProfileModal] = useState(false);
   const [editForm, setEditForm] = useState(perfil);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [profileMessage, setProfileMessage] = useState(null); 
   const [historyModal, setHistoryModal] = useState(false);
   const [notifModal, setNotifModal] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
@@ -17,43 +16,31 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
   const user = auth.currentUser;
 
-  const openEditProfile = () => {
-    setEditForm(perfil);
-    setProfileMessage(null);
-    setEditProfileModal(true);
-  };
-
-  const handleEditChange = (e) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
-  };
+  const openEditProfile = () => { setEditForm(perfil); setEditProfileModal(true); };
+  const handleEditChange = (e) => setEditForm({ ...editForm, [e.target.name]: e.target.value });
 
   const saveProfileSettings = async () => {
     if (!user) return;
     setIsSavingProfile(true);
     const cleanForm = Object.fromEntries(Object.entries(editForm).filter(([_, v]) => v !== undefined));
-
     try {
       await setDoc(doc(db, 'usuarios', user.uid), cleanForm, { merge: true });
       setEditProfileModal(false);
-      setProfileMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
-      setTimeout(() => setProfileMessage(null), 3500);
+      if (window.mostrarAviso) window.mostrarAviso("Perfil atualizado com sucesso!");
     } catch (error) {
-      console.warn("Erro ao salvar:", error);
-      setProfileMessage({ type: 'error', text: 'Falha ao salvar. Verifique a conexão.' });
-    } finally {
-      setIsSavingProfile(false);
-    }
+      if (window.mostrarAviso) window.mostrarAviso("Falha ao salvar. Verifique a conexão.", 'error');
+    } finally { setIsSavingProfile(false); }
   };
 
   const togglePrivacy = async () => {
-    const newValue = !perfil.isPrivate;
-    if (user) {
-      try { await setDoc(doc(db, 'usuarios', user.uid), { isPrivate: newValue }, { merge: true }); } 
-      catch (error) { console.warn("Erro offline:", error); }
-    }
+    if (user) await setDoc(doc(db, 'usuarios', user.uid), { isPrivate: !perfil.isPrivate }, { merge: true });
   };
 
-  // FORNALHA DE INFERIA
+  // BOTÕES DE CONFIGURAÇÃO SALVANDO NO BANCO
+  const toggleSetting = async (field) => {
+    if (user) await setDoc(doc(db, 'usuarios', user.uid), { [field]: !perfil[field] }, { merge: true });
+  };
+
   const fragmentos = perfil.fragmentos || 0;
   const podeSintetizar = fragmentos >= 5;
 
@@ -61,41 +48,25 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
     if (!user || !podeSintetizar || loadingReator) return;
     setLoadingReator(true);
     try {
-      await setDoc(doc(db, 'usuarios', user.uid), {
-        fragmentos: fragmentos - 5,
-        xp: (perfil.xp || 0) + 500
-      }, { merge: true });
-      setProfileMessage({ type: 'success', text: '🔥 Fragmentos Queimados! +500 XP' });
-      setTimeout(() => setProfileMessage(null), 3500);
+      await setDoc(doc(db, 'usuarios', user.uid), { fragmentos: fragmentos - 5, xp: (perfil.xp || 0) + 500 }, { merge: true });
+      if (window.mostrarAviso) window.mostrarAviso("🔥 Fragmentos Queimados! +500 XP");
     } catch (err) { 
-      setProfileMessage({ type: 'error', text: 'Erro ao queimar fragmentos.' });
-      setTimeout(() => setProfileMessage(null), 3500);
-    } finally { 
-      setLoadingReator(false); 
-    }
+      if (window.mostrarAviso) window.mostrarAviso("Erro ao queimar fragmentos.", 'error');
+    } finally { setLoadingReator(false); }
   };
 
-  // CÁLCULOS DAS ESTATÍSTICAS REAIS
   const xpAtual = perfil.xp || 0;
   const nivelAtual = perfil.nivel || 1;
   const xpProximoNivel = nivelAtual * 1000;
   const xpNivelAnterior = (nivelAtual - 1) * 1000;
   const progressoXP = Math.min(Math.max(((xpAtual - xpNivelAnterior) / 1000) * 100, 0), 100);
 
-  // Lê os dados salvos pelo Leitor e converte minutos para horas
   const horasLendoReal = Math.floor((perfil.tempoLendo || 0) / 60);
   const obrasFinalizadasReais = biblioteca.filter(b => b.status === 'Finalizado').length;
   const capitulosLidosReais = perfil.capitulosLidos || 0;
 
   return (
     <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen">
-      {profileMessage && (
-        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[1000] px-4 py-3 rounded-full flex items-center gap-2 text-sm font-bold shadow-lg animate-in fade-in slide-in-from-top-5 ${profileMessage.type === 'success' ? 'bg-green-900/90 text-green-400 border border-green-900' : 'bg-red-900/90 text-red-400 border border-red-900'}`}>
-          {profileMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-          {profileMessage.text}
-        </div>
-      )}
-
       <div className="relative w-full h-48 md:h-64 bg-[#0A0505] border-b border-[#2A0A0A]">
         <img src={perfil.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} alt="Cover" className="w-full h-full object-cover opacity-50 object-top" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/30 to-transparent"></div>
@@ -131,7 +102,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       </div>
 
-      {/* AS ESTATÍSTICAS REAIS ESTÃO AQUI */}
       <div className="grid grid-cols-3 gap-3 px-4 mb-6">
         <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
           <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#CC0000] to-transparent opacity-80"></div>
@@ -158,7 +128,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
           <Flame className="absolute -right-4 -bottom-4 w-32 h-32 text-[#CC0000]/10 rotate-12 pointer-events-none" />
           <h3 className="font-anime text-lg text-[#F5F7FF] mb-1">FORNALHA DE INFERIA</h3>
           <p className="text-xs text-[#A7ADBE] font-bold mb-4">Queime os fragmentos infernais dropados nas leituras para ganhar XP.</p>
-          
           <div className="flex items-center justify-between bg-black/50 p-4 rounded-xl border border-[#2A0A0A] mb-4 relative z-10">
             <div>
               <p className="text-[10px] text-[#A7ADBE] font-bold uppercase mb-1 tracking-wider">Fragmentos Infernais</p>
@@ -171,18 +140,12 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
               <div className="h-full bg-gradient-to-r from-[#CC0000] to-[#FF5555] shadow-[0_0_10px_#CC0000] transition-all" style={{ width: `${Math.min((fragmentos / 5) * 100, 100)}%` }}></div>
             </div>
           </div>
-
-          <button 
-            onClick={usarReator} 
-            disabled={!podeSintetizar || loadingReator}
-            className="w-full relative z-10 bg-gradient-to-r from-[#CC0000] to-[#990000] disabled:from-[#2A0A0A] disabled:to-[#2A0A0A] disabled:text-[#555] text-white font-bold py-3.5 rounded-xl text-sm uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] disabled:shadow-none flex items-center justify-center gap-2"
-          >
+          <button onClick={usarReator} disabled={!podeSintetizar || loadingReator} className="w-full relative z-10 bg-gradient-to-r from-[#CC0000] to-[#990000] disabled:from-[#2A0A0A] disabled:to-[#2A0A0A] disabled:text-[#555] text-white font-bold py-3.5 rounded-xl text-sm uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] disabled:shadow-none flex items-center justify-center gap-2">
             {loadingReator ? <Loader2 className="animate-spin" /> : podeSintetizar ? 'QUEIMAR FRAGMENTOS (+500 XP)' : 'FALTAM FRAGMENTOS'}
           </button>
         </div>
       </div>
 
-      {/* Modais e Opções do Perfil Inalteradas */}
       <div className="pl-4 mb-6">
         <h3 className="font-anime text-sm md:text-base font-bold tracking-widest uppercase text-[#A7ADBE] mb-4 border-l-2 border-[#2A0A0A] pl-3 leading-none mt-2">Conta</h3>
         <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4 pr-4 snap-x">
@@ -221,53 +184,40 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       </div>
 
-      {/* MODAIS (EDIÇÃO, AVISOS, ETC) */}
       {editProfileModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar font-nunito relative shadow-[0_0_50px_rgba(204,0,0,0.3)]">
             <button onClick={() => setEditProfileModal(false)} disabled={isSavingProfile} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
             <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2 leading-none mt-1">EDITAR</h3>
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Link do Avatar</label>
-                <div className="flex items-center gap-3">
-                  <img src={editForm.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} className="w-12 h-12 rounded-full border border-[#2A0A0A] object-cover" alt="preview" />
-                  <input type="text" name="avatar" value={editForm.avatar || ''} onChange={handleEditChange} placeholder="URL da imagem..." className="flex-1 bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Link da Capa</label>
-                <div className="flex items-center gap-3">
-                  <img src={editForm.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} className="w-16 h-10 rounded border border-[#2A0A0A] object-cover" alt="preview" />
-                  <input type="text" name="capa" value={editForm.capa || ''} onChange={handleEditChange} placeholder="URL da imagem..." className="flex-1 bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Nome</label><input type="text" name="nome" value={editForm.nome || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
-                <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Idade</label><input type="number" name="idade" value={editForm.idade || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
-                <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">País</label><input type="text" name="pais" value={editForm.pais || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
-                <div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Biografia</label><textarea name="biografia" value={editForm.biografia || ''} onChange={handleEditChange} rows="3" className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none resize-none"></textarea></div>
+              <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Link Avatar</label><input type="text" name="avatar" value={editForm.avatar || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs" /></div>
+              <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Link Capa</label><input type="text" name="capa" value={editForm.capa || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs" /></div>
+              <div className="grid grid-cols-2 gap-3"><div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Nome</label><input type="text" name="nome" value={editForm.nome || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm" /></div>
+                <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Idade</label><input type="number" name="idade" value={editForm.idade || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm" /></div>
+                <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">País</label><input type="text" name="pais" value={editForm.pais || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm" /></div>
+                <div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Biografia</label><textarea name="biografia" value={editForm.biografia || ''} onChange={handleEditChange} rows="3" className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm resize-none"></textarea></div>
               </div>
             </div>
-            <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-6 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest hover:opacity-90 shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
-              {isSavingProfile ? <Loader2 className="animate-spin" size={20} /> : 'SALVAR ALTERAÇÕES'}
+            <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-6 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
+              {isSavingProfile ? <Loader2 className="animate-spin" size={20} /> : 'SALVAR'}
             </button>
           </div>
         </div>
       )}
 
+      {/* Histórico Lê Obras Recentes da Biblioteca (Que agora são salvas no ReaderView) */}
       {historyModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
             <button onClick={() => setHistoryModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
             <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#7A3CFF] pl-2 leading-none mt-1">HISTÓRICO RECENTE</h3>
             <div className="overflow-y-auto hide-scrollbar space-y-3 flex-1 pr-2">
-              {biblioteca.length > 0 ? biblioteca.slice(0).reverse().map(manga => (
+              {biblioteca.length > 0 ? biblioteca.map(manga => (
                 <div key={manga.id} className="flex gap-3 bg-[#140505] p-3 rounded-xl border border-[#2A0A0A] items-center">
                   <img src={manga.capaUrl || manga.img} className="w-12 h-16 object-cover rounded" alt="capa" />
                   <div className="flex-1">
                     <h4 className="text-sm font-bold text-white">{manga.nome || manga.title}</h4>
-                    <p className="text-[10px] text-[#A7ADBE] uppercase tracking-wider font-medium">Progresso: {manga.progresso || 0}% • Cap. {manga.capAtual || 0}</p>
+                    <p className="text-[10px] text-[#A7ADBE] uppercase tracking-wider font-medium">Lido Cap. {manga.capAtual || 0}</p>
                   </div>
                 </div>
               )) : <p className="text-center text-[#A7ADBE] text-sm py-10 font-medium">Você não abriu nenhuma obra ainda.</p>}
@@ -276,33 +226,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       )}
 
-      {notifModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#FF8C00] pl-2">AVISOS</h3>
-              <div className="flex gap-2">
-                <button onClick={() => setNotificacoes(notificacoes.map(n => ({ ...n, read: true })))} className="text-[10px] uppercase font-bold text-[#FF8C00] hover:text-white px-2 py-1 bg-[#1A0505] rounded-md">Ler Tudo</button>
-                <button onClick={() => setNotifModal(false)} className="text-[#A7ADBE] hover:text-white"><X size={20} /></button>
-              </div>
-            </div>
-            <div className="overflow-y-auto hide-scrollbar space-y-3 flex-1 pr-2">
-              {notificacoes.length > 0 ? notificacoes.map(n => (
-                <div key={n.id} className={`p-4 rounded-xl border transition-colors ${n.read ? 'bg-[#0A0505] border-[#2A0A0A] opacity-60' : 'bg-[#140505] border-[#FF8C00]/30 shadow-[0_0_10px_rgba(255,140,0,0.1)]'}`}>
-                  <div className="flex gap-3">
-                    {!n.read && <div className="mt-1.5 w-2 h-2 rounded-full bg-[#FF8C00] shrink-0"></div>}
-                    <div>
-                      <p className={`text-sm ${n.read ? 'text-[#A7ADBE]' : 'text-white font-semibold'}`}>{n.text}</p>
-                      <p className="text-[10px] text-[#777] mt-1">{n.time}</p>
-                    </div>
-                  </div>
-                </div>
-              )) : <p className="text-center text-[#A7ADBE] text-sm py-10 font-bold">Nenhum aviso no momento.</p>}
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Configurações salvando no Firebase */}
       {settingsModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm font-nunito relative">
@@ -311,11 +235,15 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
                 <span className="text-sm font-bold text-[#A7ADBE]">Modo Leitura HD</span>
-                <div className="w-10 h-5 bg-[#CC0000] rounded-full relative"><div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1"></div></div>
+                <button onClick={() => toggleSetting('leituraHD')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${perfil.leituraHD ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${perfil.leituraHD ? 'left-7' : 'left-1'}`}></div>
+                </button>
               </div>
               <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
                 <span className="text-sm font-bold text-[#A7ADBE]">Scroll Suave Vertical</span>
-                <div className="w-10 h-5 bg-[#CC0000] rounded-full relative"><div className="w-3 h-3 bg-white rounded-full absolute top-1 right-1"></div></div>
+                <button onClick={() => toggleSetting('scrollSuave')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${perfil.scrollSuave ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${perfil.scrollSuave ? 'left-7' : 'left-1'}`}></div>
+                </button>
               </div>
             </div>
             <button onClick={() => setSettingsModal(false)} className="mt-6 w-full border border-[#A7ADBE] text-[#A7ADBE] py-3 rounded-xl font-bold hover:bg-[#A7ADBE] hover:text-black transition-colors">
