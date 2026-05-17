@@ -10,28 +10,32 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   const [proximoCapitulo, setProximoCapitulo] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [rollFeito, setRollFeito] = useState(false); 
-  
-  // Salva o momento exato que o usuário abriu o capítulo
   const [horaInicioLeitura] = useState(Date.now()); 
 
   useEffect(() => {
-    const buscarVizinhos = async () => {
+    const buscarVizinhosESalvarProgresso = async () => {
+      // Salva no banco de dados que a pessoa leu esse capítulo (Alimenta o Histórico)
+      if (user) {
+        setDoc(doc(db, 'usuarios', user.uid, 'biblioteca', obra.id), {
+          id: obra.id, nome: obra.nome, capaUrl: obra.capaUrl,
+          status: 'Lendo', capAtual: capitulo.numero,
+          ultimoLidoEm: new Date().toISOString()
+        }, { merge: true }).catch(err => console.error(err));
+      }
+
+      // Busca próximos capítulos
       try {
         const q = query(collection(db, 'capitulos'), where('obraId', '==', obra.id));
         const snap = await getDocs(q);
         const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         lista.sort((a, b) => Number(a.numero) - Number(b.numero));
-        
         const currentIndex = lista.findIndex(c => c.id === capitulo.id);
-        if (currentIndex > 0) setCapituloAnterior(lista[currentIndex - 1]);
-        else setCapituloAnterior(null);
-
-        if (currentIndex < lista.length - 1) setProximoCapitulo(lista[currentIndex + 1]);
-        else setProximoCapitulo(null);
-      } catch (err) { console.error("Erro vizinhos:", err); }
+        setCapituloAnterior(currentIndex > 0 ? lista[currentIndex - 1] : null);
+        setProximoCapitulo(currentIndex < lista.length - 1 ? lista[currentIndex + 1] : null);
+      } catch (err) { console.error(err); }
     };
-    if (obra && capitulo) buscarVizinhos();
-  }, [capitulo, obra]);
+    if (obra && capitulo) buscarVizinhosESalvarProgresso();
+  }, [capitulo, obra, user]);
 
   useEffect(() => {
     const handleScroll = async () => {
@@ -40,61 +44,38 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       const percentual = alturaJanela > 0 ? (scrollTotal / alturaJanela) * 100 : 100;
       setProgresso(percentual);
 
-      // QUANDO O USUÁRIO CHEGA NO FINAL DO CAPÍTULO (95%)
       if (percentual > 95 && !rollFeito && user) {
-        setRollFeito(true); // Impede que conte duplicado
-        
-        // 1. Calcula os minutos que ele passou lendo este capítulo (Mínimo de 1 minuto)
+        setRollFeito(true); 
         const tempoGastoMinutos = Math.max(1, Math.floor((Date.now() - horaInicioLeitura) / 60000));
-        
-        // 2. Prepara os dados para enviar pro Banco de Dados
-        const atualizacoesFirestore = {
-          capitulosLidos: increment(1), // Soma +1 nos capítulos lidos
-          tempoLendo: increment(tempoGastoMinutos) // Soma os minutos totais
-        };
-
-        // 3. Sistema de Drops (10% de chance)
+        const atualizacoes = { capitulosLidos: increment(1), tempoLendo: increment(tempoGastoMinutos) };
         if (Math.random() <= 0.10) {
-          atualizacoesFirestore.fragmentos = increment(1);
-          if (window.mostrarAviso) window.mostrarAviso("🔥 Você encontrou um Fragmento Infernal!");
+          atualizacoes.fragmentos = increment(1);
+          if (window.mostrarAviso) window.mostrarAviso("🔥 Encontrou um Fragmento Infernal!", 'success');
         }
-
-        // 4. Salva as estatísticas reais no perfil do usuário
-        try {
-          await setDoc(doc(db, 'usuarios', user.uid), atualizacoesFirestore, { merge: true });
-        } catch (error) {
-          console.error("Erro ao salvar estatísticas de leitura:", error);
-        }
+        await setDoc(doc(db, 'usuarios', user.uid), atualizacoes, { merge: true }).catch(err => console.error(err));
       }
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [rollFeito, user, horaInicioLeitura]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    setShowUI(true);
-    setProgresso(0);
-    setRollFeito(false);
-    setIsTransitioning(false); 
+    setShowUI(true); setProgresso(0); setRollFeito(false); setIsTransitioning(false); 
     const timer = setTimeout(() => setShowUI(false), 3500);
     return () => clearTimeout(timer);
   }, [capitulo]);
 
   const handleMudarCapitulo = (cap) => {
-    setIsTransitioning(true); 
-    window.scrollTo(0, 0);
-    setTimeout(() => {
-      onReadChapter(cap);
-    }, 800); 
+    setIsTransitioning(true); window.scrollTo(0, 0);
+    setTimeout(() => onReadChapter(cap), 800); 
   };
 
   if (!capitulo) return null;
   const paginas = capitulo.paginas || [];
 
   return (
-    <div className="bg-black min-h-screen relative font-nunito">
+    <div className={`bg-black min-h-screen relative font-nunito ${perfil?.scrollSuave ? 'scroll-smooth' : ''}`}>
       {isTransitioning && (
         <div className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
           <Loader2 className="w-16 h-16 text-[#CC0000] animate-spin mb-4" />
@@ -125,7 +106,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       {paginas.length > 0 && (
         <div onClick={() => setShowUI(!showUI)} className="w-full max-w-3xl mx-auto flex flex-col bg-black pb-28 cursor-pointer min-h-screen">
           {paginas.map((imgUrl, index) => (
-            <img key={index} src={imgUrl} alt={`Página ${index + 1}`} className="w-full object-contain select-none bg-black" loading={index < 3 ? "eager" : "lazy"} />
+            <img key={index} src={imgUrl} alt={`Pg ${index + 1}`} className="w-full object-contain select-none bg-black" loading={index < 3 ? "eager" : "lazy"} />
           ))}
         </div>
       )}
