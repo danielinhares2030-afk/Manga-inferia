@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2 } from 'lucide-react';
+import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
@@ -20,15 +20,14 @@ const AppContent = () => {
   const [selectedObraId, setSelectedObraId] = useState(null);
   const [selectedCapitulo, setSelectedCapitulo] = useState(null);
 
-  const [toastMsg, setToastMsg] = useState('');
+  // Sistema de Notificações Profissional
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
 
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  
-  // O delay foi removido para não piscar dois nomes. A fonte carrega naturalmente.
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashFade, setSplashFade] = useState(false);
-  
+  const [fontsLoaded, setFontsLoaded] = useState(false); 
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const [obras, setObras] = useState([]);
@@ -39,17 +38,18 @@ const AppContent = () => {
     nome: 'NOCTIS', xp: 0, nivel: 1, 
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000',
-    fragmentos: 0,
-    tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0
+    fragmentos: 0, tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0,
+    leituraHD: false, scrollSuave: true // Novas configurações de sistema
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [saveModal, setSaveModal] = useState({ isOpen: false, obraId: null });
 
+  // Dispara o Toast com tipo (sucesso ou erro)
   useEffect(() => {
-    window.mostrarAviso = (msg) => {
-      setToastMsg(msg);
-      setTimeout(() => setToastMsg(''), 3000);
+    window.mostrarAviso = (msg, type = 'success') => {
+      setToast({ msg, type });
+      setTimeout(() => setToast({ msg: '', type: 'success' }), 3500);
     };
   }, []);
 
@@ -67,9 +67,10 @@ const AppContent = () => {
 
   useEffect(() => {
     document.title = `Manga Inferia | ${activeTab.toUpperCase()}`;
+    const fontTimer = setTimeout(() => setFontsLoaded(true), 600); 
     const timer1 = setTimeout(() => setSplashFade(true), 2500); 
     const timer2 = setTimeout(() => setSplashVisible(false), 3000); 
-    return () => { clearTimeout(timer1); clearTimeout(timer2); };
+    return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(fontTimer); };
   }, [activeTab]);
 
   useEffect(() => {
@@ -100,7 +101,10 @@ const AppContent = () => {
     if (!user) return;
 
     const unsubBib = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca'), (snap) => {
-      setBiblioteca(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      // Ordena a biblioteca pelo último lido mais recente (útil pro Histórico)
+      const bibData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      bibData.sort((a, b) => new Date(b.ultimoLidoEm || 0) - new Date(a.ultimoLidoEm || 0));
+      setBiblioteca(bibData);
     });
 
     const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
@@ -118,13 +122,12 @@ const AppContent = () => {
 
   const { carouselData, obrasDestaque, obrasRecentes, obrasAtualizadas, catalogoFiltrado } = useMemo(() => {
     const carousel = obras.filter(o => o.isCarousel).slice(0, 5);
-    
-    // SISTEMA DE RATING: Obras Destaque agora são as com maior Nota (Top 10)
     const destaque = [...obras].sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0)).slice(0, 10);
-    
     const recentes = obras.filter(o => o.isRecente);
-    const atualizadas = obras.filter(o => o.isAtualizado);
+    // As atualizadas agora vão para a HomeView com paginação!
+    const atualizadas = obras.filter(o => o.isAtualizado).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
     const filtrado = obras.filter(o => (o.nome || '').toLowerCase().includes(searchQuery.toLowerCase()));
+    
     return { carouselData: carousel, obrasDestaque: destaque, obrasRecentes: recentes, obrasAtualizadas: atualizadas, catalogoFiltrado: filtrado };
   }, [obras, searchQuery]);
 
@@ -135,9 +138,7 @@ const AppContent = () => {
   }, [carouselData.length]);
 
   const handleMangaClick = (id) => {
-    if (activeTab === 'home' || activeTab === 'catalog' || activeTab === 'biblioteca') {
-      setPreviousTab(activeTab);
-    }
+    if (activeTab === 'home' || activeTab === 'catalog' || activeTab === 'biblioteca') setPreviousTab(activeTab);
     setSelectedObraId(id);
     setActiveTab('details');
   };
@@ -162,23 +163,19 @@ const AppContent = () => {
     <div className="min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      <div className={`fixed top-12 left-1/2 -translate-x-1/2 z-[99999] bg-[#4CAF50] text-white px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(76,175,80,0.5)] transition-all duration-300 flex items-center gap-2 ${toastMsg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'}`}>
-        <Bookmark size={18} /> {toastMsg}
+      {/* NOVO AVISO (TOAST) ESTILOSO */}
+      <div className={`fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-5 py-3.5 rounded-xl border font-bold shadow-2xl transition-all duration-300 w-max max-w-[90vw] ${toast.msg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505] border-[#CC0000] text-[#FF3333]' : 'bg-[#0A0A0A] border-[#00CC66]/50 text-[#00FF88]'}`}>
+        {toast.type === 'error' ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
+        <span className="text-sm tracking-wide">{toast.msg}</span>
       </div>
 
-      {/* ABERTURA CORRIGIDA: APENAS 1 NOME SEMPRE. */}
       {splashVisible ? (
         <div className={`fixed inset-0 z-[9999] bg-[#030305] flex flex-col justify-center items-center transition-opacity duration-700 ${splashFade ? 'opacity-0' : 'opacity-100'}`}>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(204,0,0,0.1)_0%,transparent_60%)] pointer-events-none"></div>
-          
-          <div className="relative z-10 w-full px-4 mt-10">
+          <div className={`relative z-10 w-full px-4 mt-10 transition-opacity duration-500 ${fontsLoaded ? 'opacity-100' : 'opacity-0'}`}>
             <h1 className="font-anime text-3xl sm:text-5xl text-center w-full drop-shadow-[0_0_15px_rgba(204,0,0,0.8)] text-[#F5F7FF] animate-pulse">
               MANGA<span className="text-[#CC0000]">INFERIA</span>
             </h1>
-          </div>
-          
-          <div className="absolute bottom-20 w-full flex justify-center">
-            <Loader2 className="w-10 h-10 text-[#CC0000] animate-spin drop-shadow-[0_0_10px_rgba(204,0,0,0.5)]" />
           </div>
         </div>
       ) : !user && !authLoading ? (
