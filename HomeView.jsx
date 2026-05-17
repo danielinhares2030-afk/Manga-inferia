@@ -1,4 +1,3 @@
-// HomeView.jsx
 import React, { useState, useEffect } from 'react';
 import { Play, Bookmark, Clock } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -35,7 +34,7 @@ const UpdateCard = ({ obra, onMangaClick }) => {
 
   return (
     <div onClick={() => onMangaClick(obra.id)} className="flex gap-4 bg-[#0A0505] border border-[#2A0A0A] p-3 rounded-2xl hover:border-[#7A3CFF]/50 transition-colors cursor-pointer group">
-      <img src={obra.capaUrl} alt={obra.nome} className="w-20 h-full min-h-[110px] object-cover rounded-xl border border-[#1A0505]" />
+      <img src={obra.capaUrl} alt={obra.nome} className="w-20 h-[110px] shrink-0 object-cover rounded-xl border border-[#1A0505]" />
       <div className="flex-1 flex flex-col justify-between py-1">
         <div>
           <span className="text-[9px] text-[#7A3CFF] font-black uppercase tracking-widest">{obra.tipo}</span>
