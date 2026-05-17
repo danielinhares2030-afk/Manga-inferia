@@ -30,7 +30,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const saveProfileSettings = async () => {
     if (!user) return;
     setIsSavingProfile(true);
-    setProfileMessage(null);
     const cleanForm = Object.fromEntries(Object.entries(editForm).filter(([_, v]) => v !== undefined));
 
     try {
@@ -49,14 +48,12 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const togglePrivacy = async () => {
     const newValue = !perfil.isPrivate;
     if (user) {
-      try { 
-        await setDoc(doc(db, 'usuarios', user.uid), { isPrivate: newValue }, { merge: true }); 
-      } 
+      try { await setDoc(doc(db, 'usuarios', user.uid), { isPrivate: newValue }, { merge: true }); } 
       catch (error) { console.warn("Erro offline:", error); }
     }
   };
 
-  // SISTEMA DA FORNALHA DE INFERIA
+  // FORNALHA DE INFERIA
   const fragmentos = perfil.fragmentos || 0;
   const podeSintetizar = fragmentos >= 5;
 
@@ -71,7 +68,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       setProfileMessage({ type: 'success', text: '🔥 Fragmentos Queimados! +500 XP' });
       setTimeout(() => setProfileMessage(null), 3500);
     } catch (err) { 
-      console.error(err); 
       setProfileMessage({ type: 'error', text: 'Erro ao queimar fragmentos.' });
       setTimeout(() => setProfileMessage(null), 3500);
     } finally { 
@@ -79,12 +75,17 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
     }
   };
 
-  // Cálculos do Sistema de XP para a Barra de Progresso
+  // CÁLCULOS DAS ESTATÍSTICAS REAIS
   const xpAtual = perfil.xp || 0;
   const nivelAtual = perfil.nivel || 1;
   const xpProximoNivel = nivelAtual * 1000;
   const xpNivelAnterior = (nivelAtual - 1) * 1000;
   const progressoXP = Math.min(Math.max(((xpAtual - xpNivelAnterior) / 1000) * 100, 0), 100);
+
+  // Lê os dados salvos pelo Leitor e converte minutos para horas
+  const horasLendoReal = Math.floor((perfil.tempoLendo || 0) / 60);
+  const obrasFinalizadasReais = biblioteca.filter(b => b.status === 'Finalizado').length;
+  const capitulosLidosReais = perfil.capitulosLidos || 0;
 
   return (
     <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen">
@@ -95,13 +96,11 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       )}
 
-      {/* Capa */}
       <div className="relative w-full h-48 md:h-64 bg-[#0A0505] border-b border-[#2A0A0A]">
         <img src={perfil.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} alt="Cover" className="w-full h-full object-cover opacity-50 object-top" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/30 to-transparent"></div>
       </div>
 
-      {/* Info do Usuário */}
       <div className="px-6 relative flex flex-col md:flex-row items-start md:items-end gap-5 -mt-16 z-10 mb-8">
         <div className="w-28 h-28 md:w-36 md:h-36 shrink-0 rounded-full border-4 border-[#050508] overflow-hidden bg-[#0A0505] shadow-[0_0_30px_rgba(204,0,0,0.3)]">
           <img src={perfil.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} alt="Avatar" className="w-full h-full object-cover" loading="lazy" />
@@ -120,47 +119,40 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
           </div>
           <p className="text-sm text-[#A7ADBE] mt-3 max-w-md italic border-l-2 border-[#CC0000] pl-3 font-semibold">"{perfil.biografia || 'Adicione uma biografia legal aqui.'}"</p>
           
-          {/* NOVA BARRA DE XP */}
           <div className="mt-4 w-full md:max-w-md">
             <div className="flex justify-between items-end mb-1.5">
               <span className="text-[10px] text-[#A7ADBE] font-bold uppercase tracking-widest">Progresso do Nível</span>
               <span className="text-[11px] font-teko text-[#CC0000] font-bold tracking-wider">{xpAtual} / {xpProximoNivel} XP</span>
             </div>
             <div className="h-2 bg-[#0A0505] rounded-full overflow-hidden border border-[#2A0A0A] shadow-inner">
-              <div 
-                className="h-full bg-gradient-to-r from-[#990000] to-[#FF3333] shadow-[0_0_10px_#CC0000] transition-all duration-1000 ease-out" 
-                style={{ width: `${progressoXP}%` }}
-              ></div>
+              <div className="h-full bg-gradient-to-r from-[#990000] to-[#FF3333] shadow-[0_0_10px_#CC0000] transition-all duration-1000 ease-out" style={{ width: `${progressoXP}%` }}></div>
             </div>
           </div>
-          {/* FIM DA BARRA DE XP */}
-
         </div>
       </div>
 
-      {/* ESTATÍSTICAS */}
+      {/* AS ESTATÍSTICAS REAIS ESTÃO AQUI */}
       <div className="grid grid-cols-3 gap-3 px-4 mb-6">
         <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
           <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#CC0000] to-transparent opacity-80"></div>
           <Clock size={18} className="text-[#CC0000] mb-2" />
-          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{perfil.tempoLendo || 0}<span className="text-sm font-nunito text-[#FF3333] ml-0.5">h</span></span>
+          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{horasLendoReal}<span className="text-sm font-nunito text-[#FF3333] ml-0.5">h</span></span>
           <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Horas Lendo</span>
         </div>
         <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
           <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#7A3CFF] to-transparent opacity-80"></div>
           <BookOpen size={18} className="text-[#7A3CFF] mb-2" />
-          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{perfil.obrasLidas || 0}</span>
-          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Obras Lidas</span>
+          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{obrasFinalizadasReais}</span>
+          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Obras Finalizadas</span>
         </div>
         <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
           <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#FF8C00] to-transparent opacity-80"></div>
           <History size={18} className="text-[#FF8C00] mb-2" />
-          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{perfil.capitulosLidos || 0}</span>
+          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{capitulosLidosReais}</span>
           <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Caps. Lidos</span>
         </div>
       </div>
 
-      {/* FORNALHA DE INFERIA (GAMIFICAÇÃO INTEGRADA) */}
       <div className="px-4 mb-8">
         <div className="bg-gradient-to-br from-[#140505] to-[#0A0505] border border-[#CC0000]/30 rounded-3xl p-6 shadow-[0_0_30px_rgba(204,0,0,0.1)] relative overflow-hidden">
           <Flame className="absolute -right-4 -bottom-4 w-32 h-32 text-[#CC0000]/10 rotate-12 pointer-events-none" />
@@ -190,7 +182,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       </div>
 
-      {/* OPÇÕES DO PERFIL */}
+      {/* Modais e Opções do Perfil Inalteradas */}
       <div className="pl-4 mb-6">
         <h3 className="font-anime text-sm md:text-base font-bold tracking-widest uppercase text-[#A7ADBE] mb-4 border-l-2 border-[#2A0A0A] pl-3 leading-none mt-2">Conta</h3>
         <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4 pr-4 snap-x">
@@ -229,58 +221,41 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       </div>
 
-      {/* MODAL DE EDIÇÃO DE PERFIL */}
+      {/* MODAIS (EDIÇÃO, AVISOS, ETC) */}
       {editProfileModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar font-nunito relative shadow-[0_0_50px_rgba(204,0,0,0.3)]">
             <button onClick={() => setEditProfileModal(false)} disabled={isSavingProfile} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
             <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2 leading-none mt-1">EDITAR</h3>
-
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Link do Avatar</label>
                 <div className="flex items-center gap-3">
                   <img src={editForm.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} className="w-12 h-12 rounded-full border border-[#2A0A0A] object-cover" alt="preview" />
-                  <input type="text" name="avatar" value={editForm.avatar || ''} onChange={handleEditChange} placeholder="Cole a URL da imagem aqui..." className="flex-1 bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
+                  <input type="text" name="avatar" value={editForm.avatar || ''} onChange={handleEditChange} placeholder="URL da imagem..." className="flex-1 bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
                 </div>
               </div>
-
               <div>
-                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Link da Capa de Fundo</label>
+                <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Link da Capa</label>
                 <div className="flex items-center gap-3">
                   <img src={editForm.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} className="w-16 h-10 rounded border border-[#2A0A0A] object-cover" alt="preview" />
-                  <input type="text" name="capa" value={editForm.capa || ''} onChange={handleEditChange} placeholder="Cole a URL da imagem aqui..." className="flex-1 bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
+                  <input type="text" name="capa" value={editForm.capa || ''} onChange={handleEditChange} placeholder="URL da imagem..." className="flex-1 bg-[#140505] border border-[#2A0A0A] text-white rounded-lg py-3 px-3 text-xs font-bold focus:border-[#CC0000] focus:outline-none" />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="col-span-2">
-                  <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Nome</label>
-                  <input type="text" name="nome" value={editForm.nome || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Idade</label>
-                  <input type="number" name="idade" value={editForm.idade || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">País</label>
-                  <input type="text" name="pais" value={editForm.pais || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none" />
-                </div>
-                <div className="col-span-2">
-                  <label className="text-xs font-bold text-[#A7ADBE] uppercase tracking-wider mb-1 block">Biografia</label>
-                  <textarea name="biografia" value={editForm.biografia || ''} onChange={handleEditChange} rows="3" className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm font-bold focus:border-[#CC0000] focus:outline-none resize-none"></textarea>
-                </div>
+                <div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Nome</label><input type="text" name="nome" value={editForm.nome || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
+                <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Idade</label><input type="number" name="idade" value={editForm.idade || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
+                <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">País</label><input type="text" name="pais" value={editForm.pais || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
+                <div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Biografia</label><textarea name="biografia" value={editForm.biografia || ''} onChange={handleEditChange} rows="3" className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none resize-none"></textarea></div>
               </div>
             </div>
-
-            <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-6 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest hover:opacity-90 transition-opacity shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
-              {isSavingProfile ? <Loader2 className="animate-spin text-white" size={20} /> : 'SALVAR ALTERAÇÕES'}
+            <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-6 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest hover:opacity-90 shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
+              {isSavingProfile ? <Loader2 className="animate-spin" size={20} /> : 'SALVAR ALTERAÇÕES'}
             </button>
           </div>
         </div>
       )}
 
-      {/* OUTROS MODAIS (Histórico e Avisos) */}
       {historyModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
