@@ -1,14 +1,65 @@
-import React, { useState } from 'react';
+// HomeView.jsx
+import React, { useState, useEffect } from 'react';
 import { Play, Bookmark, Clock } from 'lucide-react';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
 import { Shelf } from './UIComponents';
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return "NOVO";
-  const diffTime = Math.abs(new Date() - new Date(dateString));
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
-  if (diffDays === 0) return "NOVO";
+  const diffTime = Date.now() - new Date(dateString).getTime();
+  const diffHours = diffTime / (1000 * 60 * 60);
+  if (diffHours < 24) return "NOVO";
+  const diffDays = Math.floor(diffHours / 24);
   if (diffDays === 1) return "1 DIA ATRÁS";
   return `${diffDays} DIAS ATRÁS`;
+};
+
+const UpdateCard = ({ obra, onMangaClick }) => {
+  const [recentCaps, setRecentCaps] = useState([]);
+  
+  useEffect(() => {
+    const fetchCaps = async () => {
+      try {
+        const q = query(collection(db, 'capitulos'), where('obraId', '==', obra.id));
+        const snap = await getDocs(q);
+        let lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        lista.sort((a, b) => Number(b.numero) - Number(a.numero));
+        setRecentCaps(lista.slice(0, 3)); 
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchCaps();
+  }, [obra.id]);
+
+  return (
+    <div onClick={() => onMangaClick(obra.id)} className="flex gap-4 bg-[#0A0505] border border-[#2A0A0A] p-3 rounded-2xl hover:border-[#7A3CFF]/50 transition-colors cursor-pointer group">
+      <img src={obra.capaUrl} alt={obra.nome} className="w-20 h-full min-h-[110px] object-cover rounded-xl border border-[#1A0505]" />
+      <div className="flex-1 flex flex-col justify-between py-1">
+        <div>
+          <span className="text-[9px] text-[#7A3CFF] font-black uppercase tracking-widest">{obra.tipo}</span>
+          <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-2 leading-tight">{obra.nome}</h4>
+        </div>
+        
+        <div className="space-y-1.5 mt-2">
+          {recentCaps.length > 0 ? recentCaps.map((cap, index) => {
+            const timeLabel = formatTimeAgo(cap.dataAdicionado || obra.updatedAt);
+            return (
+              <div key={cap.id} className={`flex justify-between items-center px-2.5 py-1.5 rounded-lg border ${index === 0 ? 'bg-[#140505] border-[#2A0A0A]' : 'border-transparent py-0.5'}`}>
+                <span className={`text-xs font-bold ${index === 0 ? 'text-[#A7ADBE]' : 'text-[#777]'}`}>Capítulo {cap.numero}</span>
+                <span className={`text-[9px] font-bold uppercase ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>
+              </div>
+            )
+          }) : (
+            <div className="flex justify-between items-center bg-[#140505] px-2.5 py-1.5 rounded-lg border border-[#2A0A0A]">
+              <span className="text-xs font-bold text-[#A7ADBE]">Sem Capítulos</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obrasAtualizadas, currentSlide, setSaveModal, onMangaClick }) => {
@@ -73,36 +124,9 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {atualizacoesDaPagina.map(obra => {
-              const capMaisRecente = obra.cap || 'Cap. 01';
-              const numCap = parseInt(capMaisRecente.replace(/\D/g, '')) || 1;
-              const capAnterior = numCap > 1 ? `Cap. ${String(numCap - 1).padStart(2, '0')}` : null;
-              const timeLabel = formatTimeAgo(obra.updatedAt);
-
-              return (
-                <div key={obra.id} onClick={() => onMangaClick(obra.id)} className="flex gap-4 bg-[#0A0505] border border-[#2A0A0A] p-3 rounded-2xl hover:border-[#7A3CFF]/50 transition-colors cursor-pointer group">
-                  <img src={obra.capaUrl} alt={obra.nome} className="w-20 h-28 object-cover rounded-xl border border-[#1A0505]" />
-                  <div className="flex-1 flex flex-col justify-between py-1">
-                    <div>
-                      <span className="text-[9px] text-[#7A3CFF] font-black uppercase tracking-widest">{obra.tipo}</span>
-                      <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-2 leading-tight">{obra.nome}</h4>
-                    </div>
-                    
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center bg-[#140505] px-2.5 py-1.5 rounded-lg border border-[#2A0A0A]">
-                        <span className="text-xs font-bold text-[#A7ADBE]">{capMaisRecente}</span>
-                        <span className={`text-[9px] font-bold uppercase ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>
-                      </div>
-                      {capAnterior && (
-                        <div className="flex justify-between items-center px-2.5 py-1 rounded-lg">
-                          <span className="text-xs font-bold text-[#777]">{capAnterior}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {atualizacoesDaPagina.map(obra => (
+              <UpdateCard key={obra.id} obra={obra} onMangaClick={onMangaClick} />
+            ))}
           </div>
 
           {totalPaginas > 1 && (
