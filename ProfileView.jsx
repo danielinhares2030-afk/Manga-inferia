@@ -54,7 +54,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       setEditProfileModal(false);
       if (window.mostrarAviso) window.mostrarAviso("Perfil atualizado com sucesso!");
     } catch (error) {
-      if (window.mostrarAviso) window.mostrarAviso("A Imagem ficou grande. Tente outra.", 'error');
+      if (window.mostrarAviso) window.mostrarAviso("Erro ao salvar. Tente uma foto menor.", 'error');
     } finally { setIsSavingProfile(false); }
   };
 
@@ -129,13 +129,13 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       <div className="grid grid-cols-3 gap-3 px-4 mb-6">
         <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
           <Clock size={18} className="text-[#CC0000] mb-2" />
-          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{perfil.tempoLendo || 0}<span className="text-sm font-nunito text-[#FF3333] ml-0.5">m</span></span>
-          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Minutos Lendo</span>
+          <span className="text-2xl font-black text-[#F5F7FF] font-teko">{Math.floor((perfil.tempoLendo || 0) / 60)}<span className="text-sm font-nunito text-[#FF3333] ml-0.5">h</span></span>
+          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Horas Lendo</span>
         </div>
         <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
           <BookOpen size={18} className="text-[#7A3CFF] mb-2" />
           <span className="text-2xl font-black text-[#F5F7FF] font-teko">{obrasLidasReais}</span>
-          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Obras Lidas</span>
+          <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Finalizadas</span>
         </div>
         <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
           <History size={18} className="text-[#FF8C00] mb-2" />
@@ -309,7 +309,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
             <h3 className="text-xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2">SISTEMA</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE]">Leitura Paginada (Manga)</span>
+                <span className="text-sm font-bold text-[#A7ADBE]">Leitura Paginada (Mangas)</span>
                 <button onClick={() => toggleSetting('modoPaginado')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${perfil.modoPaginado ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${perfil.modoPaginado ? 'left-7' : 'left-1'}`}></div>
                 </button>
