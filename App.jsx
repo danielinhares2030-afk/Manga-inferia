@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
+import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, Zap, ShieldAlert, Sparkles, Search } from 'lucide-react';
 import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
@@ -65,13 +65,9 @@ const AppContent = () => {
     window.history.replaceState({ tab: activeTab }, '', window.location.href);
     
     const handlePopState = () => {
-      if (activeTab === 'reader') {
-        setActiveTab('details');
-      } else if (activeTab === 'details' || activeTab === 'search') {
-        setActiveTab(lastMainTab);
-      } else if (activeTab !== 'home') {
-        setActiveTab('home');
-      }
+      if (activeTab === 'reader') setActiveTab('details');
+      else if (activeTab === 'details' || activeTab === 'search') setActiveTab(lastMainTab);
+      else if (activeTab !== 'home') setActiveTab('home');
     };
     
     window.addEventListener('popstate', handlePopState);
@@ -94,7 +90,7 @@ const AppContent = () => {
         try {
           const userRef = doc(db, 'usuarios', currentUser.uid);
           const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) await setDoc(userRef, perfil);
+          if (!userSnap.exists()) await setDoc(userRef, { ...perfil, xp: 0 });
         } catch (error) { console.warn(error); }
       } else {
         setPerfil({ nome: 'Visitante', xp: 0, nivel: 1 });
@@ -128,7 +124,13 @@ const AppContent = () => {
         const xpAtual = data.xp || 0;
         const nivelCalculado = Math.floor(xpAtual / 1000) + 1;
         setPerfil(prev => ({ ...prev, ...data, nivel: nivelCalculado }));
-        if (data.nivel !== nivelCalculado) setDoc(doc(db, 'usuarios', user.uid), { nivel: nivelCalculado }, { merge: true });
+        
+        if (data.nivel && nivelCalculado > data.nivel) {
+          if (window.mostrarAviso) window.mostrarAviso(`SUBIU DE NÍVEL! Bateu Nível ${nivelCalculado}!`, 'level_up');
+          setDoc(doc(db, 'usuarios', user.uid), { nivel: nivelCalculado }, { merge: true });
+        } else if (!data.nivel && nivelCalculado > 1) {
+          setDoc(doc(db, 'usuarios', user.uid), { nivel: nivelCalculado }, { merge: true });
+        }
       }
     });
 
@@ -163,22 +165,15 @@ const AppContent = () => {
 
   const handleResumeManga = async (obraId, capId) => {
     setSelectedObraId(obraId);
-    if (!capId) {
-      changeTab('details');
-      return;
-    }
+    if (!capId) { changeTab('details'); return; }
     try {
       const docRef = doc(db, 'capitulos', capId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setSelectedCapitulo({ id: docSnap.id, ...docSnap.data() });
         changeTab('reader');
-      } else {
-        changeTab('details');
-      }
-    } catch (err) {
-      changeTab('details');
-    }
+      } else { changeTab('details'); }
+    } catch (err) { changeTab('details'); }
   };
 
   const globais = `
@@ -196,9 +191,9 @@ const AppContent = () => {
     <div className="min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      <div className={`fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-5 py-3.5 rounded-xl border font-bold shadow-2xl transition-all duration-300 w-max max-w-[90vw] ${toast.msg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505] border-[#CC0000] text-[#FF3333]' : 'bg-[#0A0A0A] border-[#00CC66]/50 text-[#00FF88]'}`}>
-        {toast.type === 'error' ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
-        <span className="text-sm tracking-wide">{toast.msg}</span>
+      <div className={`fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl ${toast.msg ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : toast.type === 'level_up' ? 'bg-[#1A1005]/95 border-[#FF8C00] text-[#FFB000]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
+        {toast.type === 'error' ? <ShieldAlert size={20} /> : toast.type === 'level_up' ? <Sparkles size={20} className="animate-pulse" /> : <Zap size={20} />}
+        <span className="text-sm tracking-wider font-nunito uppercase">{toast.msg}</span>
       </div>
 
       {splashVisible ? (
@@ -238,9 +233,7 @@ const AppContent = () => {
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={changeTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
-              
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={changeTab} onMangaClick={handleResumeManga} />}
-              
               {activeTab === 'search' && <SearchView obras={obras} onBack={() => changeTab(lastMainTab)} onMangaClick={handleMangaClick} />}
               {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => changeTab(lastMainTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
               {activeTab === 'reader' && <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => changeTab('details')} onReadChapter={handleReadChapter} user={user} perfil={perfil} />}
