@@ -27,7 +27,6 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
   return (
     <div className="animate-in fade-in duration-500 pb-10">
       {carouselData.length > 0 && (
-        {/* CARROSSEL DIMINUÍDO E MAIS ORGANIZADO AQUI: */}
         <section className="relative w-full h-[40vh] md:h-[50vh] overflow-hidden bg-[#030305]">
           {carouselData.map((item, index) => (
             <div key={item.id} className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
