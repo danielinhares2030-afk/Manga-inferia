@@ -236,7 +236,19 @@ const AppContent = () => {
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={changeTab} onMangaClick={handleResumeManga} />}
               {activeTab === 'search' && <SearchView obras={obras} onBack={() => changeTab(lastMainTab)} onMangaClick={handleMangaClick} />}
               {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => changeTab(lastMainTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
-              {activeTab === 'reader' && <ReaderView capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => changeTab('details')} onReadChapter={handleReadChapter} user={user} perfil={perfil} />}
+              
+              {/* O truque do key={selectedCapitulo?.id} destrói e recria o componente INSTANTANEAMENTE */}
+              {activeTab === 'reader' && (
+                <ReaderView 
+                  key={selectedCapitulo?.id} 
+                  capitulo={selectedCapitulo} 
+                  obra={obras.find(o => o.id === selectedObraId)} 
+                  onBack={() => changeTab('details')} 
+                  onReadChapter={handleReadChapter} 
+                  user={user} 
+                  perfil={perfil} 
+                />
+              )}
             </Suspense>
           </main>
 
