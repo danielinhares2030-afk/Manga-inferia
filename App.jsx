@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, Zap, ShieldAlert, Sparkles, Search, Dices } from 'lucide-react';
+import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, Zap, ShieldAlert, Sparkles, Search } from 'lucide-react';
 import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
@@ -14,7 +14,6 @@ const MangaDetailsView = lazy(() => import('./MangaDetailsView'));
 const ReaderView = lazy(() => import('./ReaderView'));
 const LoginView = lazy(() => import('./LoginView'));
 const SearchView = lazy(() => import('./SearchView'));
-const GachaView = lazy(() => import('./GachaView'));
 
 const AppContent = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -35,11 +34,11 @@ const AppContent = () => {
   const [todosUsuarios, setTodosUsuarios] = useState([]); 
   
   const [perfil, setPerfil] = useState({
-    nome: 'NOCTIS', xp: 0, nivel: 1, coins: 0,
+    nome: 'NOCTIS', xp: 0, nivel: 1, 
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000',
     fragmentos: 0, tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0,
-    modoPaginado: false, scrollSuave: true, equipamentos: {}
+    modoPaginado: false, scrollSuave: true
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,7 +53,7 @@ const AppContent = () => {
 
   const changeTab = (newTab) => {
     if (activeTab !== newTab) {
-      if (['home', 'catalog', 'search', 'biblioteca', 'ranking', 'profile', 'gacha'].includes(activeTab)) {
+      if (['home', 'catalog', 'search', 'biblioteca', 'ranking', 'profile'].includes(activeTab)) {
         setLastMainTab(activeTab);
       }
       setActiveTab(newTab);
@@ -89,10 +88,10 @@ const AppContent = () => {
         try {
           const userRef = doc(db, 'usuarios', currentUser.uid);
           const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) await setDoc(userRef, { ...perfil, xp: 0, coins: 0 });
+          if (!userSnap.exists()) await setDoc(userRef, { ...perfil, xp: 0 });
         } catch (error) { console.warn(error); }
       } else {
-        setPerfil({ nome: 'Visitante', xp: 0, nivel: 1, coins: 0 });
+        setPerfil({ nome: 'Visitante', xp: 0, nivel: 1 });
         setBiblioteca([]);
       }
     });
@@ -184,7 +183,7 @@ const AppContent = () => {
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   `;
 
-  const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search' || activeTab === 'gacha';
+  const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search';
 
   return (
     <div className="min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
@@ -219,7 +218,7 @@ const AppContent = () => {
                 <div className="flex items-center gap-4">
                   <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => changeTab('search')} />
                   <div onClick={() => changeTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
-                    <img src={perfil.equipamentos?.avatar?.image || perfil.avatar} alt="User" className="w-full h-full object-cover" />
+                    <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
                   </div>
                 </div>
               </div>
@@ -231,13 +230,11 @@ const AppContent = () => {
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={changeTab} />}
-              {activeTab === 'gacha' && <GachaView user={user} perfil={perfil} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={changeTab} onMangaClick={handleResumeManga} />}
               {activeTab === 'search' && <SearchView obras={obras} onBack={() => changeTab(lastMainTab)} onMangaClick={handleMangaClick} />}
               {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => changeTab(lastMainTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
               
-              {/* O truque do key={selectedCapitulo?.id} destrói e recria o componente INSTANTANEAMENTE */}
               {activeTab === 'reader' && (
                 <ReaderView 
                   key={selectedCapitulo?.id} 
@@ -256,11 +253,11 @@ const AppContent = () => {
 
           {!isFullScreenView && (
             <div className="fixed bottom-0 left-0 w-full z-40 px-2 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
-              <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-3 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto overflow-x-auto hide-scrollbar gap-2">
-                {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'gacha', icon: Dices, label: 'Gacha' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
+              <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto overflow-x-auto hide-scrollbar gap-2">
+                {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
                   <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 min-w-[50px] ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
-                    <tab.icon size={20} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                    <span className="text-[8px] font-bold uppercase tracking-widest font-teko">{tab.label}</span>
+                    <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                    <span className="text-[9px] font-bold uppercase tracking-widest font-teko mt-1">{tab.label}</span>
                   </button>
                 ))}
               </div>
