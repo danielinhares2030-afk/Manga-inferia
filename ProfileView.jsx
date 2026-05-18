@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon } from 'lucide-react';
+import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { auth, db } from './firebase'; 
