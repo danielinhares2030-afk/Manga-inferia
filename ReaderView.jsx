@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Settings, AlertTriangle, ChevronLeft, ChevronRight, Loader2, Flame, X, Play } from 'lucide-react';
-import { collection, query, where, getDocs, doc, setDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => {
@@ -9,7 +9,9 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   const [todosCapitulos, setTodosCapitulos] = useState([]);
   const [capituloAnterior, setCapituloAnterior] = useState(null);
   const [proximoCapitulo, setProximoCapitulo] = useState(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // Como o component nasce do zero a cada clique, ele já inicia no modo Loading.
+  const [isTransitioning, setIsTransitioning] = useState(true);
   const [showChaptersMenu, setShowChaptersMenu] = useState(false);
   const [rollFeito, setRollFeito] = useState(false); 
   const [horaInicioLeitura, setHoraInicioLeitura] = useState(Date.now()); 
@@ -100,7 +102,9 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   }, [paginaAtualPaginado, isPaginado, paginas.length, registrarLeituraEDrops, user, obra.id]);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Zero scroll no momento zero da vida do componente
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    
     setShowUI(true); 
     setProgresso(0); 
     setRollFeito(false); 
@@ -109,19 +113,22 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     setHoraInicioLeitura(Date.now()); 
     setShowChaptersMenu(false);
 
-    setIsTransitioning(false);
-    setChapterToast(capitulo.numero);
+    // Oculta a tela de loading/skeleton após 400ms e mostra o aviso de capítulo
+    const transitionTimer = setTimeout(() => {
+      setIsTransitioning(false);
+      setChapterToast(capitulo.numero);
+    }, 400);
 
-    const toastTimer = setTimeout(() => setChapterToast(null), 3000);
-    const timer = setTimeout(() => setShowUI(false), 3500);
+    const toastTimer = setTimeout(() => setChapterToast(null), 3400);
+    const uiTimer = setTimeout(() => setShowUI(false), 3800);
     
-    return () => { clearTimeout(timer); clearTimeout(toastTimer); };
+    return () => { clearTimeout(transitionTimer); clearTimeout(toastTimer); clearTimeout(uiTimer); };
   }, [capitulo]);
 
   const handleMudarCapitulo = (cap) => {
-    setIsTransitioning(true); 
-    window.scrollTo(0, 0);
-    setTimeout(() => onReadChapter(cap), 200); 
+    // Envia imediatamente a ordem para o App.jsx trocar a Key e destruir este componente.
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    onReadChapter(cap); 
   };
 
   const handlePrevPage = () => setPaginaAtualPaginado(p => Math.max(0, p - 1));
@@ -200,14 +207,15 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </button>
       </div>
 
-      {paginas.length === 0 && (
+      {paginas.length === 0 && !isTransitioning && (
         <div className="flex flex-col h-screen items-center justify-center text-[#A7ADBE] gap-4">
           <AlertTriangle size={32} className="text-[#FF3333]" />
           <h3 className="font-anime text-sm text-white">Capítulo Vazio</h3>
         </div>
       )}
 
-      {paginas.length > 0 && !isPaginado && (
+      {/* Só renderiza as imagens para o DOM quando o loading desce para evitar bugs de visão */}
+      {paginas.length > 0 && !isPaginado && !isTransitioning && (
         <div onClick={() => setShowUI(!showUI)} className="w-full max-w-3xl mx-auto flex flex-col bg-black pb-16 cursor-pointer min-h-screen">
           {paginas.map((imgUrl, index) => (
             <img key={index} src={imgUrl} alt={`Pg ${index + 1}`} className={`w-full object-contain select-none bg-black ${perfil?.leituraHD ? 'image-rendering-high-quality' : ''}`} loading={index < 3 ? "eager" : "lazy"} />
@@ -215,7 +223,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </div>
       )}
 
-      {paginas.length > 0 && isPaginado && (
+      {paginas.length > 0 && isPaginado && !isTransitioning && (
         <div className="w-full max-w-3xl mx-auto h-screen flex items-center justify-center bg-black relative">
           <div className="absolute left-0 top-0 w-1/3 h-full z-10" onClick={handlePrevPage}></div>
           <div className="absolute right-0 top-0 w-1/3 h-full z-10" onClick={handleNextPage}></div>
