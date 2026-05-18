@@ -252,7 +252,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
                 const rar = RARITIES[item.rarity];
                 const isEquipped = eq[item.type]?.id === item.id;
                 return (
-                  <div key={item.dbId} className={`bg-[#0A0505] border ${rar.border} p-3 rounded-xl flex flex-col items-center text-center relative overflow-hidden`}>
+                  <div key={item.dbId} className={`bg-[#0A0505] border ${rar.border} p-3 rounded-xl flex flex-col items-center text-center relative overflow-hidden shadow-lg`}>
                     {isEquipped && <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full shadow-[0_0_5px_#00FF88]"></div>}
                     <span className={`text-[9px] font-bold uppercase mb-2 ${rar.color}`}>{item.type}</span>
                     <h4 className="text-white text-xs font-bold line-clamp-2 mb-3 h-8">{item.name}</h4>
@@ -270,7 +270,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       )}
 
-      {/* Modais omitidos para poupar espaço, são os mesmos de antes (History, Edit, Settings, Privacy) */}
       {historyModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative">
