@@ -37,7 +37,7 @@ const CatalogView = ({ searchQuery, setSearchQuery, catalogoFiltrado, setSaveMod
   const totalFiltrosAtivos = Object.values(filtros).filter(val => val !== 'Todos').length;
 
   return (
-    <div className="animate-in fade-in duration-500 pt-6 px-4 pb-24 min-h-screen relative">
+    <div className="animate-in fade-in duration-500 pt-24 px-4 pb-24 min-h-screen relative">
       <div className="mb-6">
         <h2 className="font-anime text-3xl md:text-4xl text-white tracking-widest flex items-center gap-3 drop-shadow-md mb-4">
           <Hash className="text-[#CC0000]" size={28} /> CATÁLOGO
