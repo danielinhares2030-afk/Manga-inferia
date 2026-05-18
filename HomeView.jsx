@@ -77,21 +77,27 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
   return (
     <div className="animate-in fade-in duration-500 pb-10">
       {carouselData.length > 0 && (
-        <section className="relative w-full h-[40vh] md:h-[50vh] overflow-hidden bg-[#030305]">
+        <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden bg-[#030305]">
           {carouselData.map((item, index) => (
             <div key={item.id} className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
               <img src={item.capaUrl || item.img} alt={item.nome} className="w-full h-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/70 to-transparent"></div>
               
-              <div className="absolute bottom-4 left-4 right-4 md:left-12 z-20 font-nunito animate-in slide-in-from-bottom-10 duration-700">
-                <span className="inline-block px-2 py-0.5 bg-[#13141C]/80 backdrop-blur-md border border-[#CC0000]/40 rounded-full text-[9px] font-bold tracking-wider text-[#FF3333] mb-2 uppercase">
+              <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#050508]/90 to-transparent z-10 pointer-events-none"></div>
+              
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/80 to-transparent z-10 pointer-events-none"></div>
+              
+              <div className="absolute bottom-8 md:bottom-12 left-4 right-4 md:left-12 z-20 font-nunito animate-in slide-in-from-bottom-10 duration-700">
+                <span className="inline-block px-3 py-1 bg-[#CC0000] rounded-md text-[10px] font-black tracking-widest text-white mb-3 uppercase shadow-[0_0_10px_#CC0000]">
                   {item.tipo || 'DESTAQUE'}
                 </span>
-                <h2 className="font-teko text-4xl md:text-6xl font-bold mb-1 uppercase leading-none drop-shadow-lg">{item.nome}</h2>
-                <p className="text-[#A7ADBE] text-xs md:text-sm max-w-sm mb-4 line-clamp-2 font-semibold drop-shadow-md">{item.descricao}</p>
+                
+                <h2 className="font-teko text-4xl md:text-5xl lg:text-6xl font-bold mb-2 uppercase leading-none drop-shadow-lg text-white line-clamp-2 max-w-2xl">{item.nome}</h2>
+                
+                <p className="text-[#A7ADBE] text-xs md:text-sm max-w-md mb-5 line-clamp-2 font-semibold drop-shadow-md">{item.descricao}</p>
+                
                 <div className="flex items-center gap-3">
-                  <button onClick={() => onMangaClick(item.id)} className="w-[140px] bg-gradient-to-r from-[#CC0000] to-[#7A0000] text-white py-2.5 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(204,0,0,0.5)] transition-all font-teko tracking-wider hover:scale-[1.02]">
-                    <Play size={16} fill="currentColor" /> LER AGORA
+                  <button onClick={() => onMangaClick(item.id)} className="w-[160px] bg-gradient-to-r from-[#CC0000] to-[#7A0000] text-white py-3 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(204,0,0,0.5)] transition-all font-teko tracking-wider hover:scale-[1.02]">
+                    <Play size={18} fill="currentColor" /> LER AGORA
                   </button>
                 </div>
               </div>
@@ -104,14 +110,14 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
         <Shelf title="Em Destaque" data={obrasDestaque} color="#CC0000" onBookmark={(id) => setSaveModal({ isOpen: true, obraId: id })} onMangaClick={onMangaClick} />
         <Shelf title="Lançamentos" data={obrasRecentes} color="#FF3333" badge="Novo" onBookmark={(id) => setSaveModal({ isOpen: true, obraId: id })} onMangaClick={onMangaClick} />
         
-        <section className="mt-8 px-4">
+        <section className="mt-8 px-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1.5 h-4 bg-[#7A3CFF] rounded-full shadow-[0_0_8px_#7A3CFF]"></div>
             <h3 className="font-teko text-2xl tracking-wide uppercase mt-1">Últimas Atualizações</h3>
           </div>
 
           <div className="flex gap-2 overflow-x-auto hide-scrollbar mb-6 pb-2">
-            {['Todos', 'Manhwa', 'Mangá', 'Manhua', 'Shoujo'].map(f => (
+            {['Todos', 'Manhwa', 'Manga', 'Manhua', 'Shoujo'].map(f => (
               <button 
                 key={f} 
                 onClick={() => { setFiltro(f); setPaginaAtual(1); }}
