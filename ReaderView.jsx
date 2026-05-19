@@ -59,15 +59,18 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     
     const novoTempoLendo = (perfil?.tempoLendo || 0) + tempoGastoMinutos;
     const novosCapsLidos = (perfil?.capitulosLidos || 0) + 1;
+    const earnedXP = Math.floor(Math.random() * 41) + 10; 
     
-    let atualizacoes = { capitulosLidos: novosCapsLidos, tempoLendo: novoTempoLendo };
+    let atualizacoes = { capitulosLidos: novosCapsLidos, tempoLendo: novoTempoLendo, xp: (perfil?.xp || 0) + earnedXP };
     
     if (Math.random() <= 0.50) {
       atualizacoes.fragmentos = (perfil?.fragmentos || 0) + 1;
       setDropAnim(true); 
       setTimeout(() => setDropAnim(false), 4000); 
     }
+    
     await setDoc(doc(db, 'usuarios', user.uid), atualizacoes, { merge: true }).catch(err => console.error(err));
+    if (window.mostrarAviso) window.mostrarAviso(`Capítulo concluído! +${earnedXP} XP`);
   }, [rollFeito, user, horaInicioLeitura, perfil]);
 
   useEffect(() => {
@@ -161,14 +164,14 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       )}
 
       {isTransitioning && (
-        <div className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center animate-in fade-in duration-200 no-hue">
           <Loader2 className="w-16 h-16 text-[#CC0000] animate-spin mb-4" />
           <p className="text-[#CC0000] font-anime tracking-widest animate-pulse text-sm">ATRAVESSANDO INFERIA...</p>
         </div>
       )}
 
       {showChaptersMenu && (
-        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-md flex flex-col p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-md flex flex-col p-4 animate-in fade-in duration-200 no-hue">
           <div className="flex justify-between items-center mb-6 mt-4">
             <h3 className="text-xl font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2">CAPÍTULOS</h3>
             <button onClick={() => setShowChaptersMenu(false)} className="w-10 h-10 bg-[#140505] border border-[#2A0A0A] rounded-full flex items-center justify-center text-[#A7ADBE] hover:text-white transition-colors">
@@ -193,7 +196,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </div>
       )}
 
-      <div className={`fixed top-0 left-0 w-full bg-gradient-to-b from-black/90 to-transparent p-4 z-50 flex items-center justify-between transition-transform duration-300 ${showUI ? 'translate-y-0' : '-translate-y-full'}`}>
+      <div className={`fixed top-0 left-0 w-full bg-gradient-to-b from-black/90 to-transparent p-4 z-50 flex items-center justify-between transition-transform duration-300 no-hue ${showUI ? 'translate-y-0' : '-translate-y-full'}`}>
         <button onClick={onBack} className="w-10 h-10 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg">
           <ArrowLeft size={20} />
         </button>
@@ -216,7 +219,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       {paginas.length > 0 && !isPaginado && !isTransitioning && (
         <div onClick={() => setShowUI(!showUI)} className="w-full max-w-3xl mx-auto flex flex-col bg-black pb-16 cursor-pointer min-h-screen">
           {paginas.map((imgUrl, index) => (
-            <img key={index} src={imgUrl} alt={`Pg ${index + 1}`} className={`w-full object-contain select-none bg-black ${perfil?.leituraHD ? 'image-rendering-high-quality' : ''}`} loading={index < 3 ? "eager" : "lazy"} />
+            <img key={index} src={imgUrl} alt={`Pg ${index + 1}`} className="w-full object-contain select-none bg-black no-hue" loading={index < 3 ? "eager" : "lazy"} />
           ))}
         </div>
       )}
@@ -227,15 +230,15 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
           <div className="absolute right-0 top-0 w-1/3 h-full z-10" onClick={handleNextPage}></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/3 h-1/3 z-10" onClick={() => setShowUI(!showUI)}></div>
           
-          <img src={paginas[paginaAtualPaginado]} alt={`Pg ${paginaAtualPaginado + 1}`} className={`w-full h-full object-contain select-none bg-black ${perfil?.leituraHD ? 'image-rendering-high-quality' : ''}`} />
+          <img src={paginas[paginaAtualPaginado]} alt={`Pg ${paginaAtualPaginado + 1}`} className="w-full h-full object-contain select-none bg-black no-hue" />
           
-          <div className="absolute bottom-6 right-4 bg-black/70 px-3 py-1 rounded-full text-white text-xs font-bold z-20 pointer-events-none">
+          <div className="absolute bottom-6 right-4 bg-black/70 px-3 py-1 rounded-full text-white text-xs font-bold z-20 pointer-events-none no-hue">
             {paginaAtualPaginado + 1} / {paginas.length}
           </div>
         </div>
       )}
 
-      <div className={`fixed bottom-4 left-0 w-full px-4 z-50 transition-transform duration-300 ${showUI && paginas.length > 0 ? 'translate-y-0' : 'translate-y-24'}`}>
+      <div className={`fixed bottom-4 left-0 w-full px-4 z-50 transition-transform duration-300 no-hue ${showUI && paginas.length > 0 ? 'translate-y-0' : 'translate-y-24'}`}>
         <div className="max-w-xs mx-auto flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-md border border-[#2A0A0A] rounded-full p-1.5 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
           <button onClick={() => handleMudarCapitulo(capituloAnterior)} disabled={!capituloAnterior} className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-30 text-[#A7ADBE] hover:bg-[#140505] hover:text-[#CC0000] transition-colors">
             <ChevronLeft size={20} />
@@ -251,7 +254,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full h-[3px] bg-[#1A0505] z-50">
+      <div className="fixed bottom-0 left-0 w-full h-[3px] bg-[#1A0505] z-50 no-hue">
         <div className="h-full bg-gradient-to-r from-[#CC0000] to-[#FF3333] transition-all duration-150" style={{ width: `${progresso}%` }}></div>
       </div>
     </div>
