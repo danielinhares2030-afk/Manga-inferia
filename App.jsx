@@ -205,7 +205,6 @@ const AppContent = () => {
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
     @keyframes slash-in { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(0); opacity: 0; } }
-    @keyframes shimmer-slide { 100% { transform: translateX(100%); } }
     
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img, .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
@@ -227,9 +226,8 @@ const AppContent = () => {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(204,0,0,0.2)_0%,transparent_60%)] animate-pulse"></div>
           <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#CC0000] shadow-[0_0_30px_5px_rgba(204,0,0,0.8)] animate-[slash-in_1.5s_ease-out_forwards] origin-center"></div>
           <div className={`relative z-10 flex flex-col items-center transition-all duration-700 delay-300 w-full px-6 ${fontsLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <h1 className="font-anime text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white tracking-widest drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative overflow-hidden text-center leading-tight">
-              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -translate-x-full animate-[shimmer-slide_2.5s_infinite]"></span>
-              MANGA<span className="text-[#CC0000]">INFERIA</span>
+            <h1 className="font-anime text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white tracking-widest drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative flex flex-wrap justify-center gap-x-3 text-center leading-tight">
+              <span>MANGA</span><span className="text-[#CC0000]">INFERIA</span>
             </h1>
             <p className="font-teko text-lg sm:text-2xl text-[#CC0000] tracking-[0.4em] uppercase animate-pulse drop-shadow-[0_0_10px_#CC0000] text-center">Abrindo o Abismo</p>
           </div>
@@ -256,7 +254,7 @@ const AppContent = () => {
             </nav>
           )}
 
-          <main className={isFullScreenView ? "pb-0" : "pb-24"}>
+          <main className={isFullScreenView ? "pb-0" : "pb-32"}>
             <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
