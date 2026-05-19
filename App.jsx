@@ -208,8 +208,8 @@ const AppContent = () => {
         <div className={`fixed inset-0 z-[99999] bg-[#030305] flex flex-col justify-center items-center transition-all duration-1000 ${splashFade ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 scale-100'}`}>
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(204,0,0,0.2)_0%,transparent_60%)] animate-pulse"></div>
           <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#CC0000] shadow-[0_0_30px_5px_rgba(204,0,0,0.8)] animate-[slash-in_1.5s_ease-out_forwards] origin-center"></div>
-          <div className={`relative z-10 flex flex-col items-center transition-all duration-700 delay-300 ${fontsLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <h1 className="font-anime text-4xl sm:text-6xl text-white tracking-[0.1em] drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative overflow-hidden px-4">
+          <div className={`relative z-10 flex flex-col items-center transition-all duration-700 delay-300 w-full ${fontsLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <h1 className="font-anime text-[11vw] sm:text-7xl text-white tracking-widest drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative overflow-hidden px-2 whitespace-nowrap">
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -translate-x-full animate-[shimmer-slide_2.5s_infinite]"></span>
               MANGA<span className="text-[#CC0000]">INFERIA</span>
             </h1>
