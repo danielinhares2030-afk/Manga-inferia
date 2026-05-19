@@ -10,7 +10,6 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   const [capituloAnterior, setCapituloAnterior] = useState(null);
   const [proximoCapitulo, setProximoCapitulo] = useState(null);
   
-  // Como o component nasce do zero a cada clique, ele já inicia no modo Loading.
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [showChaptersMenu, setShowChaptersMenu] = useState(false);
   const [rollFeito, setRollFeito] = useState(false); 
@@ -19,13 +18,13 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   const [paginaAtualPaginado, setPaginaAtualPaginado] = useState(0);
   const [chapterToast, setChapterToast] = useState(null);
 
-  const isManga = obra?.tipo?.toLowerCase().includes('manga');
+  const isManga = (obra?.tipo || '').toLowerCase().includes('manga');
   const isPaginado = perfil?.modoPaginado && isManga;
   const paginas = capitulo?.paginas || [];
 
   useEffect(() => {
     const buscarVizinhosESalvarProgresso = async () => {
-      if (user && capitulo) {
+      if (user && capitulo && obra) {
         const numeroCorreto = Number(capitulo.numero) || capitulo.numero;
         setDoc(doc(db, 'usuarios', user.uid, 'biblioteca', obra.id), {
           id: obra.id, nome: obra.nome, capaUrl: obra.capaUrl,
@@ -34,20 +33,23 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         }, { merge: true }).catch(err => console.error(err));
       }
 
-      try {
-        const q = query(collection(db, 'capitulos'), where('obraId', '==', obra.id));
-        const snap = await getDocs(q);
-        const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        lista.sort((a, b) => Number(a.numero) - Number(b.numero));
-        
-        setTodosCapitulos(lista);
+      if (obra) {
+        try {
+          const q = query(collection(db, 'capitulos'), where('obraId', '==', obra.id));
+          const snap = await getDocs(q);
+          const lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          lista.sort((a, b) => Number(a.numero) - Number(b.numero));
+          
+          setTodosCapitulos(lista);
 
-        const currentIndex = lista.findIndex(c => c.id === capitulo.id);
-        setCapituloAnterior(currentIndex > 0 ? lista[currentIndex - 1] : null);
-        setProximoCapitulo(currentIndex < lista.length - 1 ? lista[currentIndex + 1] : null);
-      } catch (err) { console.error(err); }
+          const currentIndex = lista.findIndex(c => c.id === capitulo?.id);
+          setCapituloAnterior(currentIndex > 0 ? lista[currentIndex - 1] : null);
+          setProximoCapitulo(currentIndex < lista.length - 1 ? lista[currentIndex + 1] : null);
+        } catch (err) { console.error(err); }
+      }
     };
-    if (obra && capitulo) buscarVizinhosESalvarProgresso();
+    
+    buscarVizinhosESalvarProgresso();
   }, [capitulo, obra, user]);
 
   const registrarLeituraEDrops = useCallback(async () => {
@@ -60,7 +62,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     
     let atualizacoes = { capitulosLidos: novosCapsLidos, tempoLendo: novoTempoLendo };
     
-    if (Math.random() <= 1.00) {
+    if (Math.random() <= 0.50) {
       atualizacoes.fragmentos = (perfil?.fragmentos || 0) + 1;
       setDropAnim(true); 
       setTimeout(() => setDropAnim(false), 4000); 
@@ -76,7 +78,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
       const percentual = alturaJanela > 0 ? (scrollTotal / alturaJanela) * 100 : 100;
       setProgresso(percentual);
 
-      if (user && percentual > 5 && percentual % 10 < 2) { 
+      if (user && obra && percentual > 5 && percentual % 10 < 2) { 
         setDoc(doc(db, 'usuarios', user.uid, 'biblioteca', obra.id), { progresso: Math.round(percentual) }, { merge: true });
       }
 
@@ -86,23 +88,22 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isPaginado, registrarLeituraEDrops, user, obra.id]);
+  }, [isPaginado, registrarLeituraEDrops, user, obra]);
 
   useEffect(() => {
     if (isPaginado && paginas.length > 0) {
       const percentual = ((paginaAtualPaginado + 1) / paginas.length) * 100;
       setProgresso(percentual);
-      if (user && percentual > 5) {
+      if (user && obra && percentual > 5) {
         setDoc(doc(db, 'usuarios', user.uid, 'biblioteca', obra.id), { progresso: Math.round(percentual) }, { merge: true });
       }
       if (paginaAtualPaginado === paginas.length - 1) {
         registrarLeituraEDrops();
       }
     }
-  }, [paginaAtualPaginado, isPaginado, paginas.length, registrarLeituraEDrops, user, obra.id]);
+  }, [paginaAtualPaginado, isPaginado, paginas.length, registrarLeituraEDrops, user, obra]);
 
   useEffect(() => {
-    // Zero scroll no momento zero da vida do componente
     window.scrollTo({ top: 0, behavior: 'instant' });
     
     setShowUI(true); 
@@ -113,10 +114,9 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     setHoraInicioLeitura(Date.now()); 
     setShowChaptersMenu(false);
 
-    // Oculta a tela de loading/skeleton após 400ms e mostra o aviso de capítulo
     const transitionTimer = setTimeout(() => {
       setIsTransitioning(false);
-      setChapterToast(capitulo.numero);
+      setChapterToast(capitulo?.numero);
     }, 400);
 
     const toastTimer = setTimeout(() => setChapterToast(null), 3400);
@@ -126,7 +126,6 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
   }, [capitulo]);
 
   const handleMudarCapitulo = (cap) => {
-    // Envia imediatamente a ordem para o App.jsx trocar a Key e destruir este componente.
     window.scrollTo({ top: 0, behavior: 'instant' });
     onReadChapter(cap); 
   };
@@ -214,7 +213,6 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
         </div>
       )}
 
-      {/* Só renderiza as imagens para o DOM quando o loading desce para evitar bugs de visão */}
       {paginas.length > 0 && !isPaginado && !isTransitioning && (
         <div onClick={() => setShowUI(!showUI)} className="w-full max-w-3xl mx-auto flex flex-col bg-black pb-16 cursor-pointer min-h-screen">
           {paginas.map((imgUrl, index) => (
