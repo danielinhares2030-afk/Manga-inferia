@@ -96,12 +96,12 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
   return (
     <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen relative">
-      <div className="relative w-full h-48 md:h-64 bg-[#0A0505] border-b border-[#2A0A0A]">
-        <img src={currentCover} alt="Cover" className="w-full h-full object-cover opacity-50 object-top" loading="lazy" />
+      <div className="relative w-full h-64 md:h-80 bg-[#0A0505] border-b border-[#2A0A0A]">
+        <img src={currentCover} alt="Cover" className="w-full h-full object-cover opacity-60 object-center" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/30 to-transparent"></div>
       </div>
 
-      <div className="px-6 relative flex flex-col md:flex-row items-start md:items-end gap-5 -mt-16 z-10 mb-8">
+      <div className="px-6 relative flex flex-col md:flex-row items-start md:items-end gap-5 -mt-20 md:-mt-24 z-10 mb-8">
         <div className="w-28 h-28 md:w-36 md:h-36 shrink-0 rounded-full border-4 border-[#050508] overflow-hidden bg-[#0A0505] shadow-[0_0_30px_rgba(204,0,0,0.3)]">
           <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover" loading="lazy" />
         </div>
