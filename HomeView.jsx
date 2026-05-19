@@ -75,7 +75,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
   const atualizacoesDaPagina = atualizacoesFiltradas.slice((paginaAtual - 1) * itensPorPagina, paginaAtual * itensPorPagina);
 
   return (
-    <div className="animate-in fade-in duration-500 pb-10">
+    <div className="animate-in fade-in duration-500 pb-10 overflow-hidden">
       {carouselData.length > 0 && (
         <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden bg-[#030305]">
           {carouselData.map((item, index) => (
@@ -110,7 +110,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
         <Shelf title="Em Destaque" data={obrasDestaque} color="#CC0000" onBookmark={(id) => setSaveModal({ isOpen: true, obraId: id })} onMangaClick={onMangaClick} />
         <Shelf title="Lançamentos" data={obrasRecentes} color="#FF3333" badge="Novo" onBookmark={(id) => setSaveModal({ isOpen: true, obraId: id })} onMangaClick={onMangaClick} />
         
-        <section className="mt-8 px-4 max-w-7xl mx-auto">
+        <section className="mt-8 px-4 max-w-7xl mx-auto overflow-hidden">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1.5 h-4 bg-[#7A3CFF] rounded-full shadow-[0_0_8px_#7A3CFF]"></div>
             <h3 className="font-teko text-2xl tracking-wide uppercase mt-1">Últimas Atualizações</h3>
@@ -128,7 +128,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
             ))}
           </div>
 
-          <div key={paginaAtual} className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div key={paginaAtual} className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right-16 fade-in duration-500 ease-out fill-mode-forwards">
             {atualizacoesDaPagina.map(obra => (
               <UpdateCard key={obra.id} obra={obra} onMangaClick={onMangaClick} />
             ))}
