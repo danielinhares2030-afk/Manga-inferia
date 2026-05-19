@@ -33,28 +33,31 @@ const UpdateCard = ({ obra, onMangaClick }) => {
   }, [obra.id]);
 
   return (
-    <div onClick={() => onMangaClick(obra.id)} className="flex gap-4 bg-[#0A0505] border border-[#2A0A0A] p-3 rounded-2xl hover:border-[#7A3CFF]/50 transition-colors cursor-pointer group">
-      <img src={obra.capaUrl} alt={obra.nome} className="w-20 h-[110px] shrink-0 object-cover rounded-xl border border-[#1A0505]" />
-      <div className="flex-1 flex flex-col justify-between py-1">
-        <div>
-          <span className="text-[9px] text-[#7A3CFF] font-black uppercase tracking-widest">{obra.tipo}</span>
-          <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-2 leading-tight">{obra.nome}</h4>
-        </div>
+    <div onClick={() => onMangaClick(obra.id)} className="flex bg-[#0A0505] border border-[#2A0A0A] rounded-2xl hover:border-[#7A3CFF]/50 transition-colors cursor-pointer group overflow-hidden shadow-lg relative">
+      <div className="w-1.5 bg-gradient-to-b from-[#7A3CFF] to-transparent"></div>
+      
+      <div className="flex w-full p-3 gap-3">
+        <img src={obra.capaUrl} alt={obra.nome} className="w-24 h-[120px] shrink-0 object-cover rounded-xl border border-[#1A0505] shadow-md" />
         
-        <div className="space-y-1.5 mt-2">
-          {recentCaps.length > 0 ? recentCaps.map((cap, index) => {
-            const timeLabel = formatTimeAgo(cap.dataAdicionado || obra.updatedAt);
-            return (
-              <div key={cap.id} className={`flex justify-between items-center px-2.5 py-1.5 rounded-lg border ${index === 0 ? 'bg-[#140505] border-[#2A0A0A]' : 'border-transparent py-0.5'}`}>
-                <span className={`text-xs font-bold ${index === 0 ? 'text-[#A7ADBE]' : 'text-[#777]'}`}>Capítulo {cap.numero}</span>
-                <span className={`text-[9px] font-bold uppercase ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>
-              </div>
-            )
-          }) : (
-            <div className="flex justify-between items-center bg-[#140505] px-2.5 py-1.5 rounded-lg border border-[#2A0A0A]">
-              <span className="text-xs font-bold text-[#A7ADBE]">Sem Capítulos</span>
-            </div>
-          )}
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <span className="text-[9px] text-[#7A3CFF] font-black uppercase tracking-widest bg-[#7A3CFF]/10 px-2 py-0.5 rounded border border-[#7A3CFF]/20">{obra.tipo}</span>
+            <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-2 leading-tight mt-1.5">{obra.nome}</h4>
+          </div>
+          
+          <div className="bg-[#140505] rounded-xl border border-[#1A0505] mt-2 overflow-hidden flex flex-col divide-y divide-[#1A0505]">
+            {recentCaps.length > 0 ? recentCaps.map((cap) => {
+              const timeLabel = formatTimeAgo(cap.dataAdicionado || obra.updatedAt);
+              return (
+                <div key={cap.id} className="flex justify-between items-center px-3 py-1.5 hover:bg-[#1A0505] transition-colors">
+                  <span className="text-xs font-bold text-[#A7ADBE] group-hover:text-[#F5F7FF] transition-colors">Cap. {cap.numero}</span>
+                  <span className={`text-[8px] font-black uppercase ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>
+                </div>
+              )
+            }) : (
+              <div className="px-3 py-2 text-center"><span className="text-[10px] font-bold text-[#777]">Sem Capítulos</span></div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -135,7 +138,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
           </div>
 
           {totalPaginas > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
+            <div className="flex justify-center items-center gap-2 mt-8 pb-4">
               {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(num => (
                 <button 
                   key={num} 
