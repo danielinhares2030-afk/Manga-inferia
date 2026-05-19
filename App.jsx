@@ -38,7 +38,7 @@ const AppContent = () => {
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000',
     fragmentos: 0, tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0,
-    modoPaginado: false, scrollSuave: true
+    tema: 'Inferia (Vermelho)'
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,7 +88,9 @@ const AppContent = () => {
         try {
           const userRef = doc(db, 'usuarios', currentUser.uid);
           const userSnap = await getDoc(userRef);
-          if (!userSnap.exists()) await setDoc(userRef, { ...perfil, xp: 0 });
+          if (!userSnap.exists()) {
+            await setDoc(userRef, { ...perfil, xp: 0, capitulosLidos: 0, obrasLidas: 0, tempoLendo: 0 });
+          }
         } catch (error) { console.warn(error); }
       } else {
         setPerfil({ nome: 'Visitante', xp: 0, nivel: 1 });
@@ -103,7 +105,7 @@ const AppContent = () => {
       setObras(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    const rankingQuery = query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(100));
+    const rankingQuery = query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(150));
     const unsubRanking = onSnapshot(rankingQuery, (snap) => {
       setTodosUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
@@ -126,6 +128,11 @@ const AppContent = () => {
     const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        
+        if (data.xp === undefined || data.capitulosLidos === undefined) {
+          setDoc(doc(db, 'usuarios', user.uid), { xp: data.xp || 0, capitulosLidos: data.capitulosLidos || 0, tempoLendo: data.tempoLendo || 0, obrasLidas: data.obrasLidas || 0 }, { merge: true });
+        }
+
         const xpAtual = data.xp || 0;
         const nivelCalculado = Math.floor(xpAtual / 1000) + 1;
         setPerfil(prev => ({ ...prev, ...data, nivel: nivelCalculado }));
@@ -181,6 +188,14 @@ const AppContent = () => {
     } catch (err) { changeTab('details'); }
   };
 
+  const hueRotationMap = {
+    'Inferia (Vermelho)': '0deg',
+    'Abismo (Roxo)': '260deg',
+    'Gelo (Azul)': '210deg',
+    'Tóxico (Verde)': '120deg'
+  };
+  const themeHue = hueRotationMap[perfil.tema] || '0deg';
+
   const globais = `
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
     .font-anime { font-family: 'Shojumaru', system-ui; }
@@ -191,29 +206,32 @@ const AppContent = () => {
     
     @keyframes slash-in { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(0); opacity: 0; } }
     @keyframes shimmer-slide { 100% { transform: translateX(100%); } }
+    
+    .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
+    .theme-wrapper img, .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
   `;
 
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search';
 
   return (
-    <div className="min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
+    <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      <div className={`fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl ${toast.msg ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : toast.type === 'level_up' ? 'bg-[#1A1005]/95 border-[#FF8C00] text-[#FFB000]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
+      <div className={`fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : toast.type === 'level_up' ? 'bg-[#1A1005]/95 border-[#FF8C00] text-[#FFB000]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
         {toast.type === 'error' ? <ShieldAlert size={20} /> : toast.type === 'level_up' ? <Sparkles size={20} className="animate-pulse" /> : <Zap size={20} />}
         <span className="text-sm tracking-wider font-nunito uppercase">{toast.msg}</span>
       </div>
 
       {splashVisible ? (
-        <div className={`fixed inset-0 z-[99999] bg-[#030305] flex flex-col justify-center items-center transition-all duration-1000 ${splashFade ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 scale-100'}`}>
+        <div className={`fixed inset-0 z-[99999] bg-[#030305] flex flex-col justify-center items-center transition-all duration-1000 no-hue ${splashFade ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 scale-100'}`}>
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(204,0,0,0.2)_0%,transparent_60%)] animate-pulse"></div>
           <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#CC0000] shadow-[0_0_30px_5px_rgba(204,0,0,0.8)] animate-[slash-in_1.5s_ease-out_forwards] origin-center"></div>
-          <div className={`relative z-10 flex flex-col items-center transition-all duration-700 delay-300 w-full ${fontsLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <h1 className="font-anime text-[11vw] sm:text-7xl text-white tracking-widest drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative overflow-hidden px-2 whitespace-nowrap">
+          <div className={`relative z-10 flex flex-col items-center transition-all duration-700 delay-300 w-full px-6 ${fontsLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <h1 className="font-anime text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white tracking-widest drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative overflow-hidden text-center leading-tight">
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -translate-x-full animate-[shimmer-slide_2.5s_infinite]"></span>
               MANGA<span className="text-[#CC0000]">INFERIA</span>
             </h1>
-            <p className="font-teko text-xl text-[#CC0000] tracking-[0.4em] uppercase animate-pulse drop-shadow-[0_0_10px_#CC0000]">Abrindo o Abismo</p>
+            <p className="font-teko text-lg sm:text-2xl text-[#CC0000] tracking-[0.4em] uppercase animate-pulse drop-shadow-[0_0_10px_#CC0000] text-center">Abrindo o Abismo</p>
           </div>
         </div>
       ) : !user && !authLoading ? (
