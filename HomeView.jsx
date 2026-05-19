@@ -128,7 +128,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div key={paginaAtual} className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {atualizacoesDaPagina.map(obra => (
               <UpdateCard key={obra.id} obra={obra} onMangaClick={onMangaClick} />
             ))}
