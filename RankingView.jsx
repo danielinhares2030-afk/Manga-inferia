@@ -9,6 +9,7 @@ const RankingView = ({ rankingData, perfilLogado }) => {
       if (filtroRank === 'xp') return (b.xp || 0) - (a.xp || 0);
       if (filtroRank === 'caps') return (b.capitulosLidos || 0) - (a.capitulosLidos || 0);
       if (filtroRank === 'obras') return (b.obrasLidas || 0) - (a.obrasLidas || 0);
+      if (filtroRank === 'horas') return (b.tempoLendo || 0) - (a.tempoLendo || 0);
       return 0;
     });
   }, [rankingData, filtroRank]);
@@ -26,10 +27,11 @@ const RankingView = ({ rankingData, perfilLogado }) => {
         <p className="text-[#FF3333] text-xs md:text-sm font-bold uppercase tracking-widest relative z-10 drop-shadow-md">Os Lordes Soberanos do Abismo</p>
       </div>
 
-      <div className="flex justify-center gap-2 mb-10 bg-[#0A0505] p-1.5 rounded-full border border-[#2A0A0A] max-w-sm mx-auto shadow-inner relative z-10">
-        <button onClick={() => setFiltroRank('xp')} className={`flex-1 py-2 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all ${filtroRank === 'xp' ? 'bg-[#CC0000] text-white shadow-[0_0_10px_#CC0000]' : 'text-[#A7ADBE] hover:text-white'}`}>Maior XP</button>
-        <button onClick={() => setFiltroRank('caps')} className={`flex-1 py-2 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all ${filtroRank === 'caps' ? 'bg-[#CC0000] text-white shadow-[0_0_10px_#CC0000]' : 'text-[#A7ADBE] hover:text-white'}`}>Caps Lidos</button>
-        <button onClick={() => setFiltroRank('obras')} className={`flex-1 py-2 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all ${filtroRank === 'obras' ? 'bg-[#CC0000] text-white shadow-[0_0_10px_#CC0000]' : 'text-[#A7ADBE] hover:text-white'}`}>Obras Lidas</button>
+      <div className="flex flex-wrap justify-center gap-2 mb-10 bg-[#0A0505] p-1.5 rounded-2xl border border-[#2A0A0A] max-w-md mx-auto shadow-inner relative z-10">
+        <button onClick={() => setFiltroRank('xp')} className={`flex-1 min-w-[70px] py-2 rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all ${filtroRank === 'xp' ? 'bg-[#CC0000] text-white shadow-[0_0_10px_#CC0000]' : 'text-[#A7ADBE] hover:text-white'}`}>Maior XP</button>
+        <button onClick={() => setFiltroRank('caps')} className={`flex-1 min-w-[70px] py-2 rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all ${filtroRank === 'caps' ? 'bg-[#CC0000] text-white shadow-[0_0_10px_#CC0000]' : 'text-[#A7ADBE] hover:text-white'}`}>Caps</button>
+        <button onClick={() => setFiltroRank('obras')} className={`flex-1 min-w-[70px] py-2 rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all ${filtroRank === 'obras' ? 'bg-[#CC0000] text-white shadow-[0_0_10px_#CC0000]' : 'text-[#A7ADBE] hover:text-white'}`}>Obras</button>
+        <button onClick={() => setFiltroRank('horas')} className={`flex-1 min-w-[70px] py-2 rounded-xl text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all ${filtroRank === 'horas' ? 'bg-[#CC0000] text-white shadow-[0_0_10px_#CC0000]' : 'text-[#A7ADBE] hover:text-white'}`}>Horas</button>
       </div>
 
       {top3.length > 0 && (
@@ -46,7 +48,7 @@ const RankingView = ({ rankingData, perfilLogado }) => {
                 <span className="text-white font-bold text-xs md:text-sm text-center truncate w-full mt-1">{top3[1].nome}</span>
                 <div className="flex gap-2 justify-center mt-2 w-full">
                   <div className="flex flex-col items-center"><span className="text-white font-teko text-lg leading-none">{top3[1].xp || 0}</span><span className="text-[7px] font-bold text-[#C0C0C0] uppercase">XP</span></div>
-                  <div className="flex flex-col items-center"><span className="text-white font-teko text-lg leading-none">{top3[1].capitulosLidos || 0}</span><span className="text-[7px] font-bold text-[#C0C0C0] uppercase">Caps</span></div>
+                  <div className="flex flex-col items-center"><span className="text-white font-teko text-lg leading-none">{Math.floor((top3[1].tempoLendo || 0) / 60)}h</span><span className="text-[7px] font-bold text-[#C0C0C0] uppercase">Tempo</span></div>
                 </div>
               </div>
             </div>
@@ -64,7 +66,7 @@ const RankingView = ({ rankingData, perfilLogado }) => {
                 <div className="flex gap-3 justify-center mt-2 w-full bg-[#FFD700]/10 py-1 rounded border border-[#FFD700]/30">
                   <div className="flex flex-col items-center"><span className="text-[#FFD700] font-teko text-xl leading-none">{top3[0].xp || 0}</span><span className="text-[8px] font-black text-[#FFD700] uppercase">XP</span></div>
                   <div className="flex flex-col items-center"><span className="text-[#FFD700] font-teko text-xl leading-none">{top3[0].capitulosLidos || 0}</span><span className="text-[8px] font-black text-[#FFD700] uppercase">Caps</span></div>
-                  <div className="flex flex-col items-center"><span className="text-[#FFD700] font-teko text-xl leading-none">{top3[0].obrasLidas || 0}</span><span className="text-[8px] font-black text-[#FFD700] uppercase">Obras</span></div>
+                  <div className="flex flex-col items-center"><span className="text-[#FFD700] font-teko text-xl leading-none">{Math.floor((top3[0].tempoLendo || 0) / 60)}h</span><span className="text-[8px] font-black text-[#FFD700] uppercase">Tempo</span></div>
                 </div>
               </div>
             </div>
@@ -81,7 +83,7 @@ const RankingView = ({ rankingData, perfilLogado }) => {
                 <span className="text-white font-bold text-xs md:text-sm text-center truncate w-full mt-1">{top3[2].nome}</span>
                 <div className="flex gap-2 justify-center mt-2 w-full">
                   <div className="flex flex-col items-center"><span className="text-white font-teko text-lg leading-none">{top3[2].xp || 0}</span><span className="text-[7px] font-bold text-[#CD7F32] uppercase">XP</span></div>
-                  <div className="flex flex-col items-center"><span className="text-white font-teko text-lg leading-none">{top3[2].capitulosLidos || 0}</span><span className="text-[7px] font-bold text-[#CD7F32] uppercase">Caps</span></div>
+                  <div className="flex flex-col items-center"><span className="text-white font-teko text-lg leading-none">{Math.floor((top3[2].tempoLendo || 0) / 60)}h</span><span className="text-[7px] font-bold text-[#CD7F32] uppercase">Tempo</span></div>
                 </div>
               </div>
             </div>
@@ -122,8 +124,8 @@ const RankingView = ({ rankingData, perfilLogado }) => {
                   <span className="text-[8px] font-bold uppercase tracking-wider text-[#CC0000]">Caps</span>
                 </div>
                 <div className="flex flex-col items-center justify-center hidden sm:flex">
-                  <span className={`font-teko text-xl leading-none ${isMe ? 'text-white' : 'text-[#A7ADBE]'}`}>{user.obrasLidas || 0}</span>
-                  <span className="text-[8px] font-bold uppercase tracking-wider text-[#CC0000]">Obras</span>
+                  <span className={`font-teko text-xl leading-none ${isMe ? 'text-white' : 'text-[#A7ADBE]'}`}>{Math.floor((user.tempoLendo || 0) / 60)}h</span>
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-[#CC0000]">Tempo</span>
                 </div>
               </div>
             </div>
