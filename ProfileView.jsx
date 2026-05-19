@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar } from 'lucide-react';
+import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar, Palette } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { auth, db } from './firebase'; 
@@ -59,8 +59,8 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
     } finally { setIsSavingProfile(false); }
   };
 
-  const toggleSetting = async (field) => {
-    if (user) await setDoc(doc(db, 'usuarios', user.uid), { [field]: !safePerfil[field] }, { merge: true });
+  const toggleTheme = async (novoTema) => {
+    if (user) await setDoc(doc(db, 'usuarios', user.uid), { tema: novoTema }, { merge: true });
   };
 
   const togglePrivacy = async () => {
@@ -74,8 +74,9 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
     if (!user || !podeSintetizar || loadingReator) return;
     setLoadingReator(true);
     try {
-      await setDoc(doc(db, 'usuarios', user.uid), { fragmentos: fragmentos - 5, xp: (safePerfil.xp || 0) + 500 }, { merge: true });
-      if (window.mostrarAviso) window.mostrarAviso("🔥 Fragmentos Queimados! +500 XP");
+      const gainedXP = Math.floor(Math.random() * 201) + 100;
+      await setDoc(doc(db, 'usuarios', user.uid), { fragmentos: fragmentos - 5, xp: (safePerfil.xp || 0) + gainedXP }, { merge: true });
+      if (window.mostrarAviso) window.mostrarAviso(`🔥 Fornalha ativada! +${gainedXP} XP`);
     } catch (err) { 
       if (window.mostrarAviso) window.mostrarAviso("Erro ao queimar fragmentos.", 'error');
     } finally { setLoadingReator(false); }
@@ -169,7 +170,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
             </div>
           </div>
           <button onClick={usarReator} disabled={!podeSintetizar || loadingReator} className="w-full relative z-10 bg-gradient-to-r from-[#CC0000] to-[#990000] disabled:from-[#2A0A0A] disabled:to-[#2A0A0A] disabled:text-[#555] text-white font-bold py-3.5 rounded-xl text-sm uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(204,0,0,0.4)] disabled:shadow-none flex items-center justify-center gap-2">
-            {loadingReator ? <Loader2 className="animate-spin" /> : podeSintetizar ? 'QUEIMAR FRAGMENTOS (+500 XP)' : 'FALTAM FRAGMENTOS'}
+            {loadingReator ? <Loader2 className="animate-spin" /> : podeSintetizar ? 'QUEIMAR FRAGMENTOS (+XP)' : 'FALTAM FRAGMENTOS'}
           </button>
         </div>
       </div>
@@ -188,7 +189,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
           </button>
           <button onClick={() => setSettingsModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg">
             <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#A7ADBE] border border-[#A7ADBE]/20"><Settings size={16} /></div>
-            <span className="text-sm font-bold text-left tracking-wide">Configurar<br/>Leitor</span>
+            <span className="text-sm font-bold text-left tracking-wide">Ajustar<br/>Tema</span>
           </button>
           <button onClick={() => signOut(auth).then(()=>setActiveTab('home'))} className="snap-start min-w-[140px] bg-[#1A0505] border border-[#CC0000]/30 p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#2A0A0A] transition-colors shadow-lg">
             <div className="w-8 h-8 rounded-full bg-[#CC0000]/20 flex items-center justify-center text-[#FF3333]"><LogOut size={16} /></div>
@@ -304,22 +305,24 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm font-nunito relative">
             <button onClick={() => setSettingsModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white"><X size={20} /></button>
-            <h3 className="text-xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2">SISTEMA</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE]">Leitura Paginada (Mangas)</span>
-                <button onClick={() => toggleSetting('modoPaginado')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.modoPaginado ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.modoPaginado ? 'left-7' : 'left-1'}`}></div>
+            <h3 className="text-xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2 flex items-center gap-2"><Palette size={20} className="text-[#A7ADBE]" /> TEMA VISUAL</h3>
+            
+            <p className="text-xs text-[#A7ADBE] font-bold mb-4">Escolha a cor que domina o Abismo para você.</p>
+            
+            <div className="space-y-3">
+              {['Inferia (Vermelho)', 'Abismo (Roxo)', 'Gelo (Azul)', 'Tóxico (Verde)'].map(tema => (
+                <button 
+                  key={tema}
+                  onClick={() => toggleTheme(tema)}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-colors ${safePerfil.tema === tema ? 'bg-[#CC0000]/20 border-[#CC0000] text-white shadow-[0_0_10px_rgba(204,0,0,0.2)]' : 'bg-[#140505] border-[#2A0A0A] text-[#A7ADBE] hover:border-[#CC0000]/50'}`}
+                >
+                  <span className="text-sm font-bold">{tema}</span>
+                  {safePerfil.tema === tema && <div className="w-2 h-2 rounded-full bg-[#CC0000] shadow-[0_0_8px_#CC0000]"></div>}
                 </button>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE]">Scroll Suave Vertical</span>
-                <button onClick={() => toggleSetting('scrollSuave')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.scrollSuave ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.scrollSuave ? 'left-7' : 'left-1'}`}></div>
-                </button>
-              </div>
+              ))}
             </div>
-            <button onClick={() => setSettingsModal(false)} className="mt-6 w-full border border-[#A7ADBE] text-[#A7ADBE] py-3 rounded-xl font-bold hover:bg-[#A7ADBE] hover:text-black transition-colors">
+
+            <button onClick={() => setSettingsModal(false)} className="mt-8 w-full border border-[#A7ADBE] text-[#A7ADBE] py-3 rounded-xl font-bold hover:bg-[#A7ADBE] hover:text-black transition-colors">
               FECHAR
             </button>
           </div>
