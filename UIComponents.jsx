@@ -18,11 +18,11 @@ export const MangaCard = React.memo(({ manga, variant = 'default', badge, isUpda
         )}
 
         {variant === 'library' ? (
-          <button onClick={(e) => { e.stopPropagation(); onSettings(manga.id); }} className="absolute top-2 right-2 w-8 h-8 bg-black/80 rounded-full flex items-center justify-center text-white hover:text-[#CC0000] border border-white/10 z-20 transition-colors">
+          <button onClick={(e) => { e.stopPropagation(); onSettings(manga.id); }} className="absolute top-2 right-2 w-8 h-8 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:text-[#CC0000] border border-white/10 z-20 transition-colors shadow-[0_0_10px_rgba(0,0,0,0.8)]">
             <Settings size={14} />
           </button>
         ) : (
-          <button onClick={(e) => { e.stopPropagation(); onBookmark(manga.id); }} className="absolute top-2 right-2 w-8 h-8 bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all hover:text-[#CC0000] hover:scale-110 z-20 shadow-lg">
+          <button onClick={(e) => { e.stopPropagation(); onBookmark(manga.id); }} className="absolute top-2 right-2 w-8 h-8 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all hover:bg-[#CC0000] hover:scale-110 z-20 shadow-[0_0_10px_rgba(0,0,0,0.8)] border border-white/10">
             <Bookmark size={14} />
           </button>
         )}
