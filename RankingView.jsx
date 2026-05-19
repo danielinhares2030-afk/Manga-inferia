@@ -5,7 +5,10 @@ const RankingView = ({ rankingData, perfilLogado }) => {
   const [filtroRank, setFiltroRank] = useState('xp'); 
 
   const dadosOrdenados = useMemo(() => {
-    return [...rankingData].sort((a, b) => {
+    // Filtro essencial: o usuário PRECISA ter pelo menos 1 estatística válida para aparecer no Ranking
+    const usuariosAtivos = rankingData.filter(u => (u.xp > 0) || (u.capitulosLidos > 0) || (u.obrasLidas > 0) || (u.tempoLendo > 0));
+    
+    return usuariosAtivos.sort((a, b) => {
       if (filtroRank === 'xp') return (b.xp || 0) - (a.xp || 0);
       if (filtroRank === 'caps') return (b.capitulosLidos || 0) - (a.capitulosLidos || 0);
       if (filtroRank === 'obras') return (b.obrasLidas || 0) - (a.obrasLidas || 0);
@@ -131,7 +134,7 @@ const RankingView = ({ rankingData, perfilLogado }) => {
             </div>
           );
         })}
-        {others.length === 0 && rankingData.length <= 3 && (
+        {others.length === 0 && dadosOrdenados.length <= 3 && (
           <p className="text-center text-[#A7ADBE] text-sm py-8 font-bold uppercase tracking-widest">Apenas estes Monarcas dominam Inferia.</p>
         )}
       </div>
