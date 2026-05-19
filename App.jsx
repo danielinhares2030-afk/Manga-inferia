@@ -74,9 +74,9 @@ const AppContent = () => {
 
   useEffect(() => {
     document.title = `Manga Inferia | ${activeTab.toUpperCase()}`;
-    const fontTimer = setTimeout(() => setFontsLoaded(true), 600); 
-    const timer1 = setTimeout(() => setSplashFade(true), 2500); 
-    const timer2 = setTimeout(() => setSplashVisible(false), 3000); 
+    const fontTimer = setTimeout(() => setFontsLoaded(true), 400); 
+    const timer1 = setTimeout(() => setSplashFade(true), 2800); 
+    const timer2 = setTimeout(() => setSplashVisible(false), 3300); 
     return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(fontTimer); };
   }, [activeTab]);
 
@@ -103,17 +103,24 @@ const AppContent = () => {
       setObras(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    const rankingQuery = query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(50));
+    const rankingQuery = query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(100));
     const unsubRanking = onSnapshot(rankingQuery, (snap) => {
       setTodosUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
     if (!user) return;
 
+    let syncTimeout = null;
     const unsubBib = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca'), (snap) => {
       const bibData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       bibData.sort((a, b) => new Date(b.ultimoLidoEm || 0) - new Date(a.ultimoLidoEm || 0));
       setBiblioteca(bibData);
+
+      clearTimeout(syncTimeout);
+      syncTimeout = setTimeout(() => {
+        const obrasConcluidas = bibData.filter(b => b.progresso >= 95 || b.status === 'Finalizado').length;
+        setDoc(doc(db, 'usuarios', user.uid), { obrasLidas: obrasConcluidas }, { merge: true });
+      }, 2000);
     });
 
     const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
@@ -132,7 +139,7 @@ const AppContent = () => {
       }
     });
 
-    return () => { unsubObras(); unsubRanking(); unsubBib(); unsubPerfil(); };
+    return () => { unsubObras(); unsubRanking(); unsubBib(); unsubPerfil(); clearTimeout(syncTimeout); };
   }, [user]);
 
   const { carouselData, obrasDestaque, obrasRecentes, obrasAtualizadas, catalogoFiltrado } = useMemo(() => {
@@ -181,6 +188,9 @@ const AppContent = () => {
     .font-nunito { font-family: 'Nunito', sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    @keyframes slash-in { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(0); opacity: 0; } }
+    @keyframes shimmer-slide { 100% { transform: translateX(100%); } }
   `;
 
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search';
@@ -195,12 +205,15 @@ const AppContent = () => {
       </div>
 
       {splashVisible ? (
-        <div className={`fixed inset-0 z-[9999] bg-[#030305] flex flex-col justify-center items-center transition-opacity duration-700 ${splashFade ? 'opacity-0' : 'opacity-100'}`}>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(204,0,0,0.1)_0%,transparent_60%)] pointer-events-none"></div>
-          <div className={`relative z-10 w-full px-4 mt-10 transition-opacity duration-500 ${fontsLoaded ? 'opacity-100' : 'opacity-0'}`}>
-            <h1 className="font-anime text-3xl sm:text-5xl text-center w-full drop-shadow-[0_0_15px_rgba(204,0,0,0.8)] text-[#F5F7FF] animate-pulse">
+        <div className={`fixed inset-0 z-[99999] bg-[#030305] flex flex-col justify-center items-center transition-all duration-1000 ${splashFade ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 scale-100'}`}>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(204,0,0,0.2)_0%,transparent_60%)] animate-pulse"></div>
+          <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#CC0000] shadow-[0_0_30px_5px_rgba(204,0,0,0.8)] animate-[slash-in_1.5s_ease-out_forwards] origin-center"></div>
+          <div className={`relative z-10 flex flex-col items-center transition-all duration-700 delay-300 ${fontsLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <h1 className="font-anime text-4xl sm:text-6xl text-white tracking-[0.1em] drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative overflow-hidden px-4">
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -translate-x-full animate-[shimmer-slide_2.5s_infinite]"></span>
               MANGA<span className="text-[#CC0000]">INFERIA</span>
             </h1>
+            <p className="font-teko text-xl text-[#CC0000] tracking-[0.4em] uppercase animate-pulse drop-shadow-[0_0_10px_#CC0000]">Abrindo o Abismo</p>
           </div>
         </div>
       ) : !user && !authLoading ? (
@@ -249,7 +262,7 @@ const AppContent = () => {
             </Suspense>
           </main>
 
-          <SaveModal isOpen={saveModal.isOpen} onClose={() => setSaveModal({ isOpen: false, obraId: null })} obra={obras.find(o => o.id === saveModal.obraId)} user={user} />
+          <SaveModal isOpen={saveModal.isOpen} onClose={() => setSaveModal({ isOpen: false, obraId: null })} obra={obras.find(o => o.id === saveModal.obraId)} user={user} isAlreadySaved={biblioteca.some(b => b.id === saveModal.obraId)} />
 
           {!isFullScreenView && (
             <div className="fixed bottom-0 left-0 w-full z-40 px-2 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
