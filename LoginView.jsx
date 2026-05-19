@@ -34,8 +34,8 @@ const LoginView = () => {
       <div className={`w-full max-w-lg bg-[#0A0505]/90 backdrop-blur-xl border ${isLogin ? 'border-[#2A0A0A]' : 'border-[#7A3CFF]/30'} rounded-3xl p-10 md:p-12 shadow-[0_0_50px_rgba(0,0,0,0.5)] z-10 animate-in fade-in slide-in-from-bottom-5 transition-all duration-700`}>
         
         <div className="text-center mb-10">
-          <h1 className="font-anime text-4xl drop-shadow-md text-[#F5F7FF] mb-2 transition-all duration-500">
-            MANGA<span className={`${isLogin ? 'text-[#CC0000]' : 'text-[#7A3CFF]'} transition-colors duration-500`}>INFERIA</span>
+          <h1 className="font-anime text-3xl sm:text-4xl drop-shadow-md text-[#F5F7FF] mb-2 transition-all duration-500 flex flex-wrap justify-center gap-x-2">
+            <span>MANGA</span><span className={`${isLogin ? 'text-[#CC0000]' : 'text-[#7A3CFF]'} transition-colors duration-500`}>INFERIA</span>
           </h1>
           <p className="text-[#A7ADBE] text-sm font-bold uppercase tracking-widest transition-all duration-500">
             {isLogin ? 'Bem-vindo de volta' : 'Junte-se ao Abismo'}
