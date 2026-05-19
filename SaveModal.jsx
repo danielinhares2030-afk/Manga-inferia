@@ -1,9 +1,9 @@
 import React from 'react';
-import { X, BookOpen, CheckCircle2, Star, XCircle } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { X, BookOpen, CheckCircle2, Star, XCircle, Trash2 } from 'lucide-react';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
-const SaveModal = ({ isOpen, onClose, obra, user }) => {
+const SaveModal = ({ isOpen, onClose, obra, user, isAlreadySaved }) => {
   if (!isOpen || !obra || !user) return null;
 
   const handleSave = async (status) => {
@@ -25,6 +25,17 @@ const SaveModal = ({ isOpen, onClose, obra, user }) => {
     } catch (error) {
       console.error("Erro ao salvar:", error);
       if (window.mostrarAviso) window.mostrarAviso("Erro ao salvar obra!", "error");
+    }
+  };
+
+  const handleRemove = async () => {
+    try {
+      await deleteDoc(doc(db, 'usuarios', user.uid, 'biblioteca', obra.id));
+      if (window.mostrarAviso) window.mostrarAviso("Obra removida da biblioteca!", "error");
+      onClose();
+    } catch (error) {
+      console.error("Erro ao remover:", error);
+      if (window.mostrarAviso) window.mostrarAviso("Erro ao remover obra!", "error");
     }
   };
 
@@ -59,6 +70,16 @@ const SaveModal = ({ isOpen, onClose, obra, user }) => {
               <span className="text-xs font-bold text-[#A7ADBE] group-hover:text-white uppercase tracking-wider">{opt.label}</span>
             </button>
           ))}
+
+          {isAlreadySaved && (
+            <button 
+              onClick={handleRemove}
+              className="w-full flex items-center justify-center gap-2 p-3 mt-4 rounded-xl border border-[#CC0000]/30 bg-[#CC0000]/10 hover:bg-[#CC0000] transition-colors group text-[#FF3333] hover:text-white"
+            >
+              <Trash2 size={16} />
+              <span className="text-xs font-bold uppercase tracking-wider">Remover Obra</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
