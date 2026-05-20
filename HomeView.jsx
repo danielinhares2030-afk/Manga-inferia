@@ -40,26 +40,26 @@ const UpdateCard = ({ obra, onMangaClick }) => {
   const timeLabel = lastCap ? formatTimeAgo(lastCap.dataAdicionado || obra.updatedAt) : formatTimeAgo(obra.updatedAt);
 
   return (
-    <div onClick={() => onMangaClick(obra.id)} className="flex bg-[#0A0505] border border-[#2A0A0A] rounded-2xl hover:border-[#CC0000]/50 transition-colors cursor-pointer group shadow-lg overflow-hidden min-h-[120px]">
-      <div className="w-1.5 bg-gradient-to-b from-[#CC0000] to-transparent shrink-0"></div>
+    <div onClick={() => onMangaClick(obra.id)} className="flex flex-col bg-[#0A0505] border border-[#2A0A0A] rounded-2xl hover:border-[#CC0000]/50 transition-colors cursor-pointer group shadow-lg overflow-hidden">
       
-      <div className="flex w-full p-3 gap-3">
-        <img src={obra.capaUrl} alt={obra.nome} className="w-20 min-h-[96px] object-cover shrink-0 rounded-lg border border-[#1A0505] shadow-md" />
+      {/* Parte Superior: Capa e Título */}
+      <div className="flex w-full p-3 gap-3 items-start border-b border-[#1A0505]">
+        <img src={obra.capaUrl} alt={obra.nome} className="w-16 h-24 object-cover shrink-0 rounded-lg border border-[#1A0505] shadow-md" />
         
-        <div className="flex-1 flex flex-col justify-between">
-          <div>
-            <span className="text-[8px] text-[#CC0000] font-black uppercase tracking-widest bg-[#CC0000]/10 px-1.5 py-0.5 rounded border border-[#CC0000]/20">{obra.tipo}</span>
-            <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-2 leading-tight mt-1">{obra.nome}</h4>
-          </div>
-          
-          <div className="bg-[#140505] rounded-lg border border-[#1A0505] px-3 py-2 flex justify-between items-center shadow-inner mt-3 w-full">
-            <span className="text-[11px] font-bold text-[#A7ADBE] group-hover:text-white transition-colors">
-              {lastCap ? `Cap. ${lastCap.numero}` : 'Sem Capítulos'}
-            </span>
-            {lastCap && <span className={`text-[9px] font-black uppercase tracking-widest ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>}
-          </div>
+        <div className="flex-1 flex flex-col pt-1">
+          <span className="text-[8px] text-[#CC0000] font-black uppercase tracking-widest bg-[#CC0000]/10 px-1.5 py-0.5 rounded border border-[#CC0000]/20 w-max mb-1.5">{obra.tipo}</span>
+          <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-[#CC0000] transition-colors line-clamp-2 leading-tight">{obra.nome}</h4>
         </div>
       </div>
+      
+      {/* Parte Inferior: Capítulo (Sempre preso dentro do card) */}
+      <div className="bg-[#140505] px-4 py-2.5 flex justify-between items-center w-full">
+        <span className="text-[11px] font-bold text-[#A7ADBE] group-hover:text-white transition-colors">
+          {lastCap ? `Capítulo ${lastCap.numero}` : 'Sem Capítulos'}
+        </span>
+        {lastCap && <span className={`text-[9px] font-black uppercase tracking-widest ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>}
+      </div>
+      
     </div>
   );
 };
@@ -71,7 +71,6 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
 
   const atualizacoesFiltradas = obrasAtualizadas.filter(obra => {
     if (filtro === 'Todos') return true;
-    // O filtro agora ignora acentos e maiúsculas/minúsculas para funcionar 100%
     return normalizeString(obra.tipo).includes(normalizeString(filtro));
   });
 
@@ -87,7 +86,6 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
               <img src={item.capaUrl || item.img} alt={item.nome} className="w-full h-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
               
               <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-[#050508]/90 to-transparent z-10 pointer-events-none"></div>
-              
               <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/80 to-transparent z-10 pointer-events-none"></div>
               
               <div className="absolute bottom-8 md:bottom-12 left-4 right-4 md:left-12 z-20 font-nunito animate-in slide-in-from-bottom-10 duration-700">
@@ -132,7 +130,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
             ))}
           </div>
 
-          <div key={paginaAtual} className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right-16 fade-in duration-500 ease-out fill-mode-forwards">
+          <div key={paginaAtual} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in slide-in-from-right-16 fade-in duration-500 ease-out fill-mode-forwards">
             {atualizacoesDaPagina.map(obra => (
               <UpdateCard key={obra.id} obra={obra} onMangaClick={onMangaClick} />
             ))}
