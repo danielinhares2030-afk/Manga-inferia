@@ -5,8 +5,10 @@ const RankingView = ({ rankingData, perfilLogado }) => {
   const [filtroRank, setFiltroRank] = useState('xp'); 
 
   const dadosOrdenados = useMemo(() => {
-    // Filtro essencial: o usuário PRECISA ter pelo menos 1 estatística válida para aparecer no Ranking
-    const usuariosAtivos = rankingData.filter(u => (u.xp > 0) || (u.capitulosLidos > 0) || (u.obrasLidas > 0) || (u.tempoLendo > 0));
+    // FILTRO VIGOROSO: Só entra no Ranking se tiver alguma atividade real registrada
+    const usuariosAtivos = rankingData.filter(u => 
+      (u.xp > 0) || (u.capitulosLidos > 0) || (u.obrasLidas > 0) || (u.tempoLendo > 0)
+    );
     
     return usuariosAtivos.sort((a, b) => {
       if (filtroRank === 'xp') return (b.xp || 0) - (a.xp || 0);
@@ -21,8 +23,8 @@ const RankingView = ({ rankingData, perfilLogado }) => {
   const others = dadosOrdenados.slice(3);
 
   return (
-    <div className="animate-in fade-in duration-500 pt-24 px-4 pb-24 min-h-screen max-w-4xl mx-auto font-nunito">
-      <div className="mb-8 text-center relative">
+    <div className="animate-in fade-in duration-500 pt-8 px-4 pb-12 min-h-screen max-w-4xl mx-auto font-nunito">
+      <div className="mb-8 text-center relative mt-4">
         <Flame className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 text-[#CC0000]/10 blur-2xl pointer-events-none" />
         <h2 className="font-anime text-3xl md:text-5xl text-white tracking-widest flex items-center justify-center gap-4 drop-shadow-[0_0_20px_#CC0000] mb-2 relative z-10">
           <Trophy className="text-[#FF3333]" size={36} /> RANKING DE INFERIA
