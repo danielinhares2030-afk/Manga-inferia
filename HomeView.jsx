@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Bookmark, Clock } from 'lucide-react';
+import { Play, ChevronRight } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import { Shelf } from './UIComponents';
@@ -15,7 +15,7 @@ const formatTimeAgo = (dateString) => {
 };
 
 const UpdateCard = ({ obra, onMangaClick }) => {
-  const [recentCaps, setRecentCaps] = useState([]);
+  const [lastCap, setLastCap] = useState(null);
   
   useEffect(() => {
     const fetchCaps = async () => {
@@ -24,7 +24,7 @@ const UpdateCard = ({ obra, onMangaClick }) => {
         const snap = await getDocs(q);
         let lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         lista.sort((a, b) => Number(b.numero) - Number(a.numero));
-        setRecentCaps(lista.slice(0, 3)); 
+        setLastCap(lista[0]); 
       } catch (err) {
         console.error(err);
       }
@@ -32,32 +32,23 @@ const UpdateCard = ({ obra, onMangaClick }) => {
     fetchCaps();
   }, [obra.id]);
 
+  const timeLabel = lastCap ? formatTimeAgo(lastCap.dataAdicionado || obra.updatedAt) : formatTimeAgo(obra.updatedAt);
+
   return (
-    <div onClick={() => onMangaClick(obra.id)} className="flex bg-[#0A0505] border border-[#2A0A0A] rounded-2xl hover:border-[#7A3CFF]/50 transition-colors cursor-pointer group overflow-hidden shadow-lg relative">
-      <div className="w-1.5 bg-gradient-to-b from-[#7A3CFF] to-transparent"></div>
+    <div onClick={() => onMangaClick(obra.id)} className="flex bg-[#0A0505] border border-[#2A0A0A] rounded-2xl hover:border-[#CC0000]/50 transition-colors cursor-pointer group shadow-lg overflow-hidden h-[110px]">
+      <img src={obra.capaUrl} alt={obra.nome} className="w-24 h-full object-cover shrink-0" />
       
-      <div className="flex w-full p-3 gap-3">
-        <img src={obra.capaUrl} alt={obra.nome} className="w-24 h-[120px] shrink-0 object-cover rounded-xl border border-[#1A0505] shadow-md" />
+      <div className="flex-1 p-3 flex flex-col justify-between">
+        <div>
+          <span className="text-[8px] text-[#CC0000] font-black uppercase tracking-widest bg-[#CC0000]/10 px-1.5 py-0.5 rounded border border-[#CC0000]/20">{obra.tipo}</span>
+          <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-1 leading-tight mt-1">{obra.nome}</h4>
+        </div>
         
-        <div className="flex-1 flex flex-col justify-between">
-          <div>
-            <span className="text-[9px] text-[#7A3CFF] font-black uppercase tracking-widest bg-[#7A3CFF]/10 px-2 py-0.5 rounded border border-[#7A3CFF]/20">{obra.tipo}</span>
-            <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-2 leading-tight mt-1.5">{obra.nome}</h4>
-          </div>
-          
-          <div className="bg-[#140505] rounded-xl border border-[#1A0505] mt-2 overflow-hidden flex flex-col divide-y divide-[#1A0505]">
-            {recentCaps.length > 0 ? recentCaps.map((cap) => {
-              const timeLabel = formatTimeAgo(cap.dataAdicionado || obra.updatedAt);
-              return (
-                <div key={cap.id} className="flex justify-between items-center px-3 py-1.5 hover:bg-[#1A0505] transition-colors">
-                  <span className="text-xs font-bold text-[#A7ADBE] group-hover:text-[#F5F7FF] transition-colors">Cap. {cap.numero}</span>
-                  <span className={`text-[8px] font-black uppercase ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>
-                </div>
-              )
-            }) : (
-              <div className="px-3 py-2 text-center"><span className="text-[10px] font-bold text-[#777]">Sem Capítulos</span></div>
-            )}
-          </div>
+        <div className="bg-[#140505] rounded-lg border border-[#1A0505] px-3 py-2 flex justify-between items-center shadow-inner mt-2">
+          <span className="text-[11px] font-bold text-[#A7ADBE] group-hover:text-white transition-colors">
+            {lastCap ? `Cap. ${lastCap.numero}` : 'Sem Capítulos'}
+          </span>
+          {lastCap && <span className={`text-[9px] font-black uppercase tracking-widest ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>}
         </div>
       </div>
     </div>
@@ -78,7 +69,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
   const atualizacoesDaPagina = atualizacoesFiltradas.slice((paginaAtual - 1) * itensPorPagina, paginaAtual * itensPorPagina);
 
   return (
-    <div className="animate-in fade-in duration-500 pb-10 overflow-hidden">
+    <div className="animate-in fade-in duration-500 overflow-hidden">
       {carouselData.length > 0 && (
         <section className="relative w-full h-[50vh] md:h-[60vh] overflow-hidden bg-[#030305]">
           {carouselData.map((item, index) => (
@@ -109,7 +100,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
         </section>
       )}
 
-      <div className={carouselData.length === 0 ? "pt-24" : ""}>
+      <div className={carouselData.length === 0 ? "pt-8" : ""}>
         <Shelf title="Em Destaque" data={obrasDestaque} color="#CC0000" onBookmark={(id) => setSaveModal({ isOpen: true, obraId: id })} onMangaClick={onMangaClick} />
         <Shelf title="Lançamentos" data={obrasRecentes} color="#FF3333" badge="Novo" onBookmark={(id) => setSaveModal({ isOpen: true, obraId: id })} onMangaClick={onMangaClick} />
         
