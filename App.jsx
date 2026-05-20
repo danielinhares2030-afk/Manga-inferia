@@ -29,6 +29,10 @@ const AppContent = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false); 
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Controle da barra inteligente (esconde ao rolar)
+  const [showNav, setShowNav] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
   const [obras, setObras] = useState([]);
   const [biblioteca, setBiblioteca] = useState([]);
   const [todosUsuarios, setTodosUsuarios] = useState([]); 
@@ -44,6 +48,22 @@ const AppContent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [saveModal, setSaveModal] = useState({ isOpen: false, obraId: null });
 
+  // Detecção de scroll para a barra sumir e aparecer
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setShowNav(false); // Rolou pra baixo, esconde a barra
+      } else {
+        setShowNav(true); // Rolou pra cima, mostra a barra
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
   useEffect(() => {
     window.mostrarAviso = (msg, type = 'success') => {
       setToast({ msg, type });
@@ -57,6 +77,8 @@ const AppContent = () => {
         setLastMainTab(activeTab);
       }
       setActiveTab(newTab);
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Volta pro topo ao mudar de aba
+      setShowNav(true);
       window.history.pushState({ tab: newTab }, '', window.location.href);
     }
   };
@@ -211,6 +233,7 @@ const AppContent = () => {
     .theme-wrapper img, .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
   `;
 
+  // Telas em que a barra de navegação inferior NÃO DEVE aparecer de jeito nenhum
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search';
 
   return (
@@ -239,39 +262,24 @@ const AppContent = () => {
         </Suspense>
       ) : user ? (
         <>
-          {/* BARRA DE NAVEGAÇÃO FOI PARA O TOPO (HEADER) */}
           {!isFullScreenView && (
-            <header className="sticky top-0 z-40 w-full bg-[#050508]/95 backdrop-blur-md border-b border-[#2A0A0A] shadow-md">
-              <div className="flex items-center justify-between max-w-7xl mx-auto px-4 pt-4 pb-2">
-                <h1 className="font-anime text-xl shadow-black drop-shadow-md">
+            <nav className="fixed top-0 left-0 w-full z-40 bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 pointer-events-none">
+              <div className="flex items-center justify-between max-w-7xl mx-auto pointer-events-auto">
+                <h1 className="font-anime text-lg md:text-xl shadow-black drop-shadow-md">
                   MANGA<span className="text-[#CC0000]">INFERIA</span>
                 </h1>
                 <div className="flex items-center gap-4">
                   <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => changeTab('search')} />
-                  <div onClick={() => changeTab('profile')} className="w-8 h-8 rounded-full border border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
+                  <div onClick={() => changeTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
                     <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
                   </div>
                 </div>
               </div>
-              
-              {/* MENU DE NAVEGAÇÃO */}
-              <div className="flex items-center justify-between px-4 pb-2 max-w-7xl mx-auto overflow-x-auto hide-scrollbar gap-2">
-                {[
-                  { id: 'home', icon: Home, label: 'Home' }, 
-                  { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, 
-                  { id: 'ranking', icon: Trophy, label: 'Ranking' }, 
-                  { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }
-                ].map(tab => (
-                  <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 min-w-max flex-1 ${activeTab === tab.id ? 'bg-[#CC0000]/10 border border-[#CC0000]/50 text-[#CC0000] shadow-[0_0_10px_rgba(204,0,0,0.2)]' : 'border border-transparent text-[#A7ADBE] hover:text-[#F5F7FF] hover:bg-[#1A0505]'}`}>
-                    <tab.icon size={16} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest font-teko mt-0.5">{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-            </header>
+            </nav>
           )}
 
-          <main className="flex-1 pb-10">
+          {/* O pb-28 garante que o conteúdo role para cima da barra quando chegar no fundo */}
+          <main className={`flex-1 ${isFullScreenView ? "pb-0" : "pb-28"}`}>
             <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
@@ -296,6 +304,20 @@ const AppContent = () => {
           </main>
 
           <SaveModal isOpen={saveModal.isOpen} onClose={() => setSaveModal({ isOpen: false, obraId: null })} obra={obras.find(o => o.id === saveModal.obraId)} user={user} isAlreadySaved={biblioteca.some(b => b.id === saveModal.obraId)} />
+
+          {/* BARRA INTELIGENTE - Se esconde automaticamente ao rolar a página */}
+          {!isFullScreenView && (
+            <div className={`fixed bottom-0 left-0 w-full z-40 px-2 pb-4 pt-4 bg-gradient-to-t from-[#050508] via-[#050508]/90 to-transparent pointer-events-none transition-transform duration-500 ease-in-out ${showNav ? 'translate-y-0' : 'translate-y-full'}`}>
+              <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto overflow-x-auto hide-scrollbar gap-2 max-w-lg mx-auto">
+                {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
+                  <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 min-w-[50px] ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
+                    <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                    <span className="text-[9px] font-bold uppercase tracking-widest font-teko mt-1">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       ) : null}
     </div>
