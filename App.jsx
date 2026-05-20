@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, Zap, ShieldAlert, Sparkles, Search } from 'lucide-react';
+import { Home, LayoutGrid, Trophy, Bookmark, User, Loader2, Zap, ShieldAlert, Sparkles, Search, Dices } from 'lucide-react';
 import { onSnapshot, collection, doc, setDoc, getDoc, query, orderBy, limit } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from './firebase';
@@ -14,6 +14,11 @@ const MangaDetailsView = lazy(() => import('./MangaDetailsView'));
 const ReaderView = lazy(() => import('./ReaderView'));
 const LoginView = lazy(() => import('./LoginView'));
 const SearchView = lazy(() => import('./SearchView'));
+const GachaView = lazy(() => import('./GachaView'));
+
+// Puxa o tema instantaneamente do cache para não piscar a tela
+const getLocalTheme = () => localStorage.getItem('mi_theme') || 'Inferia (Vermelho)';
+const getLocalEffect = () => localStorage.getItem('mi_effect') || 'Nenhum';
 
 const AppContent = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -38,7 +43,7 @@ const AppContent = () => {
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200', 
     capa: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000',
     fragmentos: 0, tempoLendo: 0, obrasLidas: 0, capitulosLidos: 0,
-    tema: 'Inferia (Vermelho)', efeitoVisual: 'Nenhum'
+    tema: getLocalTheme(), efeitoVisual: getLocalEffect(), equipamentos: {}
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,7 +58,7 @@ const AppContent = () => {
 
   const changeTab = (newTab) => {
     if (activeTab !== newTab) {
-      if (['home', 'catalog', 'search', 'biblioteca', 'ranking', 'profile'].includes(activeTab)) {
+      if (['home', 'catalog', 'search', 'biblioteca', 'ranking', 'profile', 'gacha'].includes(activeTab)) {
         setLastMainTab(activeTab);
       }
       setActiveTab(newTab);
@@ -129,6 +134,10 @@ const AppContent = () => {
     const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        
+        // Cache instantâneo dos temas
+        if (data.tema) localStorage.setItem('mi_theme', data.tema);
+        if (data.efeitoVisual) localStorage.setItem('mi_effect', data.efeitoVisual);
         
         if (data.xp === undefined || data.capitulosLidos === undefined) {
           setDoc(doc(db, 'usuarios', user.uid), { xp: data.xp || 0, capitulosLidos: data.capitulosLidos || 0, tempoLendo: data.tempoLendo || 0, obrasLidas: data.obrasLidas || 0 }, { merge: true });
@@ -215,7 +224,7 @@ const AppContent = () => {
     .theme-wrapper img, .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
   `;
 
-  const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search';
+  const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search' || activeTab === 'gacha';
 
   return (
     <React.Fragment>
@@ -252,9 +261,9 @@ const AppContent = () => {
         </div>
       )}
 
-      {/* HEADER SUPERIOR */}
+      {/* HEADER SUPERIOR TRANSPARENTE E CORRIGIDO */}
       {!isFullScreenView && user && !splashVisible && (
-        <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] via-[#050508]/90 to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none">
+        <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
             <h1 className="font-anime text-lg md:text-xl shadow-black">
               MANGA<span className="text-[#CC0000]">INFERIA</span>
@@ -262,27 +271,27 @@ const AppContent = () => {
             <div className="flex items-center gap-4">
               <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => changeTab('search')} />
               <div onClick={() => changeTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
-                <img src={perfil.avatar} alt="User" className="w-full h-full object-cover no-hue" />
+                <img src={perfil.equipamentos?.avatar?.image || perfil.avatar} alt="User" className="w-full h-full object-cover no-hue" />
               </div>
             </div>
           </div>
         </header>
       )}
 
-      {/* CONTEÚDO PRINCIPAL COM ESPAÇO NO FUNDO (pb-32) */}
       <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white">
         {!user && !authLoading && !splashVisible ? (
           <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[#050202]"><Loader2 className="animate-spin text-[#CC0000]" /></div>}>
             <LoginView />
           </Suspense>
         ) : user && !splashVisible ? (
-          <main className={isFullScreenView ? "pb-0" : "pb-32 pt-20"}>
+          <main className={isFullScreenView ? "pb-0" : "pb-32"}>
             <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={changeTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={changeTab} onMangaClick={handleResumeManga} />}
+              {activeTab === 'gacha' && <GachaView user={user} perfil={perfil} />}
               {activeTab === 'search' && <SearchView obras={obras} onBack={() => changeTab(lastMainTab)} onMangaClick={handleMangaClick} />}
               {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => changeTab(lastMainTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
               
@@ -308,14 +317,14 @@ const AppContent = () => {
         </div>
       )}
 
-      {/* NAVBAR FIXA NO FUNDO E BLINDADA DE FILTROS */}
+      {/* NAVBAR FIXA NO RODAPÉ BLINDADA DE FILTROS */}
       {user && !isFullScreenView && !splashVisible && (
         <div style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed bottom-0 left-0 w-full z-[9999] px-2 pb-4 pt-2 pointer-events-none text-[#F5F7FF]">
           
           <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent z-0"></div>
           
           <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto overflow-x-auto hide-scrollbar gap-2 max-w-lg mx-auto relative z-10">
-            {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
+            {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'gacha', icon: Dices, label: 'Gacha' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
               <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 min-w-[50px] ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
                 <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
                 <span className="text-[9px] font-bold uppercase tracking-widest font-teko mt-1">{tab.label}</span>
