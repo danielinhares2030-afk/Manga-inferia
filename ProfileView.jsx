@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar, Palette } from 'lucide-react';
+import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar, Palette, Sparkles } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { auth, db } from './firebase'; 
@@ -61,6 +61,10 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
   const toggleTheme = async (novoTema) => {
     if (user) await setDoc(doc(db, 'usuarios', user.uid), { tema: novoTema }, { merge: true });
+  };
+
+  const toggleEffect = async (novoEfeito) => {
+    if (user) await setDoc(doc(db, 'usuarios', user.uid), { efeitoVisual: novoEfeito }, { merge: true });
   };
 
   const togglePrivacy = async () => {
@@ -189,26 +193,11 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
           </button>
           <button onClick={() => setSettingsModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg">
             <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#A7ADBE] border border-[#A7ADBE]/20"><Settings size={16} /></div>
-            <span className="text-sm font-bold text-left tracking-wide">Ajustar<br/>Tema</span>
+            <span className="text-sm font-bold text-left tracking-wide">Ajustes &<br/>Efeitos</span>
           </button>
           <button onClick={() => signOut(auth).then(()=>setActiveTab('home'))} className="snap-start min-w-[140px] bg-[#1A0505] border border-[#CC0000]/30 p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#2A0A0A] transition-colors shadow-lg">
             <div className="w-8 h-8 rounded-full bg-[#CC0000]/20 flex items-center justify-center text-[#FF3333]"><LogOut size={16} /></div>
             <span className="text-sm font-bold text-left text-[#FF3333] tracking-wide">Sair da<br/>Conta</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="px-4">
-        <div className="flex items-center justify-between p-4 bg-[#0A0505] border border-[#2A0A0A] rounded-2xl shadow-lg">
-          <div className="flex items-center gap-3">
-            {safePerfil.isPrivate ? <EyeOff size={22} className="text-[#CC0000]" /> : <Eye size={22} className="text-[#A7ADBE]" />}
-            <div>
-              <p className="text-sm font-bold text-[#F5F7FF] tracking-wide">Privacidade</p>
-              <p className="text-[11px] text-[#A7ADBE] font-bold">{safePerfil.isPrivate ? 'Seu perfil está Oculto.' : 'Seu perfil é Público.'}</p>
-            </div>
-          </div>
-          <button onClick={togglePrivacy} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.isPrivate ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
-            <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.isPrivate ? 'left-7' : 'left-1'}`}></div>
           </button>
         </div>
       </div>
@@ -274,56 +263,51 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         </div>
       )}
 
-      {notifModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-0">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#FF8C00] pl-2">AVISOS</h3>
-              <div className="flex gap-2">
-                <button onClick={() => setNotificacoes(notificacoes.map(n => ({ ...n, read: true })))} className="text-[10px] uppercase font-bold text-[#FF8C00] hover:text-white px-2 py-1 bg-[#1A0505] rounded-md">Ler Tudo</button>
-                <button onClick={() => setNotifModal(false)} className="text-[#A7ADBE] hover:text-white"><X size={20} /></button>
-              </div>
-            </div>
-            <div className="overflow-y-auto hide-scrollbar space-y-3 flex-1 pr-2">
-              {notificacoes.length > 0 ? notificacoes.map(n => (
-                <div key={n.id} className={`p-4 rounded-xl border transition-colors ${n.read ? 'bg-[#0A0505] border-[#2A0A0A] opacity-60' : 'bg-[#140505] border-[#FF8C00]/30 shadow-[0_0_10px_rgba(255,140,0,0.1)]'}`}>
-                  <div className="flex gap-3">
-                    {!n.read && <div className="mt-1.5 w-2 h-2 rounded-full bg-[#FF8C00] shrink-0"></div>}
-                    <div>
-                      <p className={`text-sm ${n.read ? 'text-[#A7ADBE]' : 'text-white font-semibold'}`}>{n.text}</p>
-                      <p className="text-[10px] text-[#777] mt-1">{n.time}</p>
-                    </div>
-                  </div>
-                </div>
-              )) : <p className="text-center text-[#A7ADBE] text-sm py-10 font-bold">Nenhum aviso no momento.</p>}
-            </div>
-          </div>
-        </div>
-      )}
-
       {settingsModal && (
         <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm font-nunito relative">
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm max-h-[85vh] overflow-y-auto hide-scrollbar font-nunito relative shadow-[0_0_40px_rgba(0,0,0,0.5)]">
             <button onClick={() => setSettingsModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white"><X size={20} /></button>
-            <h3 className="text-xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2 flex items-center gap-2"><Palette size={20} className="text-[#A7ADBE]" /> TEMA VISUAL</h3>
+            <h3 className="text-xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2 flex items-center gap-2">CONFIGURAÇÕES</h3>
             
-            <p className="text-xs text-[#A7ADBE] font-bold mb-4">Escolha a cor que domina o Abismo para você.</p>
-            
-            <div className="space-y-3">
-              {['Inferia (Vermelho)', 'Abismo (Roxo)', 'Gelo (Azul)', 'Tóxico (Verde)'].map(tema => (
-                <button 
-                  key={tema}
-                  onClick={() => toggleTheme(tema)}
-                  className={`w-full flex items-center justify-between p-4 rounded-xl border transition-colors ${safePerfil.tema === tema ? 'bg-[#CC0000]/20 border-[#CC0000] text-white shadow-[0_0_10px_rgba(204,0,0,0.2)]' : 'bg-[#140505] border-[#2A0A0A] text-[#A7ADBE] hover:border-[#CC0000]/50'}`}
-                >
-                  <span className="text-sm font-bold">{tema}</span>
-                  {safePerfil.tema === tema && <div className="w-2 h-2 rounded-full bg-[#CC0000] shadow-[0_0_8px_#CC0000]"></div>}
-                </button>
-              ))}
+            <div className="space-y-6">
+              
+              {/* Efeitos Visuais (Novo) */}
+              <div>
+                <h4 className="text-xs font-bold text-[#A7ADBE] uppercase mb-3 flex items-center gap-2"><Sparkles size={16} className="text-[#CC0000]"/> Efeitos Visuais Globais</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Nenhum', 'TV Antiga (CRT)', 'Vinheta Sombria', 'Partículas Siderais'].map(eff => (
+                    <button 
+                      key={eff}
+                      onClick={() => toggleEffect(eff)}
+                      className={`p-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all text-center ${safePerfil.efeitoVisual === eff ? 'bg-[#CC0000]/20 border-[#CC0000] text-white shadow-[0_0_10px_rgba(204,0,0,0.3)]' : 'bg-[#140505] border-[#2A0A0A] text-[#A7ADBE] hover:bg-[#1A0505]'}`}
+                    >
+                      {eff}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tema de Cores */}
+              <div>
+                <h4 className="text-xs font-bold text-[#A7ADBE] uppercase mb-3 flex items-center gap-2"><Palette size={16} className="text-[#CC0000]"/> Cores do Abismo</h4>
+                <div className="space-y-2">
+                  {['Inferia (Vermelho)', 'Abismo (Roxo)', 'Gelo (Azul)', 'Tóxico (Verde)'].map(tema => (
+                    <button 
+                      key={tema}
+                      onClick={() => toggleTheme(tema)}
+                      className={`w-full flex items-center justify-between p-3.5 rounded-xl border transition-colors ${safePerfil.tema === tema ? 'bg-[#CC0000]/20 border-[#CC0000] text-white' : 'bg-[#140505] border-[#2A0A0A] text-[#A7ADBE] hover:border-[#CC0000]/50'}`}
+                    >
+                      <span className="text-sm font-bold">{tema}</span>
+                      {safePerfil.tema === tema && <div className="w-2 h-2 rounded-full bg-[#CC0000] shadow-[0_0_8px_#CC0000]"></div>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
-            <button onClick={() => setSettingsModal(false)} className="mt-8 w-full border border-[#A7ADBE] text-[#A7ADBE] py-3 rounded-xl font-bold hover:bg-[#A7ADBE] hover:text-black transition-colors">
-              FECHAR
+            <button onClick={() => setSettingsModal(false)} className="mt-8 w-full border border-[#A7ADBE] text-[#A7ADBE] py-3 rounded-xl font-bold hover:bg-[#A7ADBE] hover:text-black transition-colors uppercase tracking-widest text-xs">
+              Salvar e Fechar
             </button>
           </div>
         </div>
