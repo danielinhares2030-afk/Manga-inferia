@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, ChevronRight } from 'lucide-react';
+import { Play, Bookmark, Clock, ChevronRight } from 'lucide-react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import { Shelf } from './UIComponents';
@@ -23,6 +23,7 @@ const UpdateCard = ({ obra, onMangaClick }) => {
         const q = query(collection(db, 'capitulos'), where('obraId', '==', obra.id));
         const snap = await getDocs(q);
         let lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Ordena para pegar apenas o mais recente
         lista.sort((a, b) => Number(b.numero) - Number(a.numero));
         setLastCap(lista[0]); 
       } catch (err) {
@@ -36,19 +37,23 @@ const UpdateCard = ({ obra, onMangaClick }) => {
 
   return (
     <div onClick={() => onMangaClick(obra.id)} className="flex bg-[#0A0505] border border-[#2A0A0A] rounded-2xl hover:border-[#CC0000]/50 transition-colors cursor-pointer group shadow-lg overflow-hidden h-[110px]">
-      <img src={obra.capaUrl} alt={obra.nome} className="w-24 h-full object-cover shrink-0" />
+      <div className="w-1.5 bg-gradient-to-b from-[#CC0000] to-transparent"></div>
       
-      <div className="flex-1 p-3 flex flex-col justify-between">
-        <div>
-          <span className="text-[8px] text-[#CC0000] font-black uppercase tracking-widest bg-[#CC0000]/10 px-1.5 py-0.5 rounded border border-[#CC0000]/20">{obra.tipo}</span>
-          <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-1 leading-tight mt-1">{obra.nome}</h4>
-        </div>
+      <div className="flex w-full p-3 gap-3 items-center">
+        <img src={obra.capaUrl} alt={obra.nome} className="w-20 h-full object-cover shrink-0 rounded-lg border border-[#1A0505]" />
         
-        <div className="bg-[#140505] rounded-lg border border-[#1A0505] px-3 py-2 flex justify-between items-center shadow-inner mt-2">
-          <span className="text-[11px] font-bold text-[#A7ADBE] group-hover:text-white transition-colors">
-            {lastCap ? `Cap. ${lastCap.numero}` : 'Sem Capítulos'}
-          </span>
-          {lastCap && <span className={`text-[9px] font-black uppercase tracking-widest ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>}
+        <div className="flex-1 flex flex-col justify-center h-full py-1">
+          <div>
+            <span className="text-[8px] text-[#CC0000] font-black uppercase tracking-widest bg-[#CC0000]/10 px-1.5 py-0.5 rounded border border-[#CC0000]/20">{obra.tipo}</span>
+            <h4 className="font-nunito text-sm font-bold text-[#F5F7FF] group-hover:text-white line-clamp-2 leading-tight mt-1">{obra.nome}</h4>
+          </div>
+          
+          <div className="bg-[#140505] rounded-lg border border-[#1A0505] px-3 py-2 flex justify-between items-center shadow-inner mt-auto">
+            <span className="text-[11px] font-bold text-[#A7ADBE] group-hover:text-white transition-colors">
+              {lastCap ? `Cap. ${lastCap.numero}` : 'Sem Capítulos'}
+            </span>
+            {lastCap && <span className={`text-[9px] font-black uppercase tracking-widest ${timeLabel === 'NOVO' ? 'text-[#00FF88]' : 'text-[#777]'}`}>{timeLabel}</span>}
+          </div>
         </div>
       </div>
     </div>
@@ -100,7 +105,7 @@ const HomeView = React.memo(({ carouselData, obrasDestaque, obrasRecentes, obras
         </section>
       )}
 
-      <div className={carouselData.length === 0 ? "pt-8" : ""}>
+      <div className={carouselData.length === 0 ? "pt-24" : ""}>
         <Shelf title="Em Destaque" data={obrasDestaque} color="#CC0000" onBookmark={(id) => setSaveModal({ isOpen: true, obraId: id })} onMangaClick={onMangaClick} />
         <Shelf title="Lançamentos" data={obrasRecentes} color="#FF3333" badge="Novo" onBookmark={(id) => setSaveModal({ isOpen: true, obraId: id })} onMangaClick={onMangaClick} />
         
