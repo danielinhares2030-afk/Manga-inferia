@@ -205,6 +205,7 @@ const AppContent = () => {
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
     @keyframes slash-in { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(0); opacity: 0; } }
+    @keyframes shimmer-slide { 100% { transform: translateX(100%); } }
     
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img, .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
@@ -213,7 +214,7 @@ const AppContent = () => {
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search';
 
   return (
-    <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
+    <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white relative overflow-x-hidden">
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
       <div className={`fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : toast.type === 'level_up' ? 'bg-[#1A1005]/95 border-[#FF8C00] text-[#FFB000]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
@@ -226,7 +227,7 @@ const AppContent = () => {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(204,0,0,0.2)_0%,transparent_60%)] animate-pulse"></div>
           <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#CC0000] shadow-[0_0_30px_5px_rgba(204,0,0,0.8)] animate-[slash-in_1.5s_ease-out_forwards] origin-center"></div>
           <div className={`relative z-10 flex flex-col items-center transition-all duration-700 delay-300 w-full px-6 ${fontsLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <h1 className="font-anime text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-white tracking-widest drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative flex flex-wrap justify-center gap-x-3 text-center leading-tight">
+            <h1 className="font-anime text-[11vw] sm:text-7xl text-white tracking-widest drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative flex flex-wrap justify-center gap-x-3 text-center leading-tight">
               <span>MANGA</span><span className="text-[#CC0000]">INFERIA</span>
             </h1>
             <p className="font-teko text-lg sm:text-2xl text-[#CC0000] tracking-[0.4em] uppercase animate-pulse drop-shadow-[0_0_10px_#CC0000] text-center">Abrindo o Abismo</p>
@@ -238,23 +239,39 @@ const AppContent = () => {
         </Suspense>
       ) : user ? (
         <>
+          {/* BARRA DE NAVEGAÇÃO FOI PARA O TOPO (HEADER) */}
           {!isFullScreenView && (
-            <nav className="fixed top-0 left-0 w-full z-40 bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 pointer-events-none">
-              <div className="flex items-center justify-between max-w-7xl mx-auto pointer-events-auto">
-                <h1 className="font-anime text-lg md:text-xl shadow-black drop-shadow-md">
+            <header className="sticky top-0 z-40 w-full bg-[#050508]/95 backdrop-blur-md border-b border-[#2A0A0A] shadow-md">
+              <div className="flex items-center justify-between max-w-7xl mx-auto px-4 pt-4 pb-2">
+                <h1 className="font-anime text-xl shadow-black drop-shadow-md">
                   MANGA<span className="text-[#CC0000]">INFERIA</span>
                 </h1>
                 <div className="flex items-center gap-4">
                   <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => changeTab('search')} />
-                  <div onClick={() => changeTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
+                  <div onClick={() => changeTab('profile')} className="w-8 h-8 rounded-full border border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
                     <img src={perfil.avatar} alt="User" className="w-full h-full object-cover" />
                   </div>
                 </div>
               </div>
-            </nav>
+              
+              {/* MENU DE NAVEGAÇÃO */}
+              <div className="flex items-center justify-between px-4 pb-2 max-w-7xl mx-auto overflow-x-auto hide-scrollbar gap-2">
+                {[
+                  { id: 'home', icon: Home, label: 'Home' }, 
+                  { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, 
+                  { id: 'ranking', icon: Trophy, label: 'Ranking' }, 
+                  { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }
+                ].map(tab => (
+                  <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 min-w-max flex-1 ${activeTab === tab.id ? 'bg-[#CC0000]/10 border border-[#CC0000]/50 text-[#CC0000] shadow-[0_0_10px_rgba(204,0,0,0.2)]' : 'border border-transparent text-[#A7ADBE] hover:text-[#F5F7FF] hover:bg-[#1A0505]'}`}>
+                    <tab.icon size={16} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest font-teko mt-0.5">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </header>
           )}
 
-          <main className={isFullScreenView ? "pb-0" : "pb-32"}>
+          <main className="flex-1 pb-10">
             <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
@@ -279,19 +296,6 @@ const AppContent = () => {
           </main>
 
           <SaveModal isOpen={saveModal.isOpen} onClose={() => setSaveModal({ isOpen: false, obraId: null })} obra={obras.find(o => o.id === saveModal.obraId)} user={user} isAlreadySaved={biblioteca.some(b => b.id === saveModal.obraId)} />
-
-          {!isFullScreenView && (
-            <div className="fixed bottom-0 left-0 w-full z-40 px-2 pb-4 pt-2 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent pointer-events-none">
-              <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto overflow-x-auto hide-scrollbar gap-2">
-                {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'biblioteca', icon: Bookmark, label: 'Biblioteca' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
-                  <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 min-w-[50px] ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
-                    <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                    <span className="text-[9px] font-bold uppercase tracking-widest font-teko mt-1">{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </>
       ) : null}
     </div>
