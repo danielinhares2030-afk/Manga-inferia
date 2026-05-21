@@ -250,6 +250,7 @@ const AppContent = () => {
         </div>
       )}
 
+      {/* HEADER SUPERIOR TRANSPARENTE SEM MARGENS QUE QUEBRAM O LAYOUT */}
       {!isFullScreenView && user && !splashVisible && (
         <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
@@ -266,13 +267,14 @@ const AppContent = () => {
         </header>
       )}
 
+      {/* REMOVIDO O pt-20 DO MAIN - O CONTEÚDO VAI VAZAR LINDAMENTE POR TRÁS DO HEADER DE NOVO */}
       <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white">
         {!user && !authLoading && !splashVisible ? (
           <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[#050202]"><Loader2 className="animate-spin text-[#CC0000]" /></div>}>
             <LoginView />
           </Suspense>
         ) : user && !splashVisible ? (
-          <main className={isFullScreenView ? "pb-0" : "pb-32 pt-20"}>
+          <main className={isFullScreenView ? "pb-0" : "pb-32"}>
             <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
