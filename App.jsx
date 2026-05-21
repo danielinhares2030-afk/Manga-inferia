@@ -14,7 +14,7 @@ const MangaDetailsView = lazy(() => import('./MangaDetailsView'));
 const ReaderView = lazy(() => import('./ReaderView'));
 const LoginView = lazy(() => import('./LoginView'));
 const SearchView = lazy(() => import('./SearchView'));
-const GachaView = lazy(() => import('./GachaView'));
+const RelicsView = lazy(() => import('./RelicsView'));
 
 // Puxa o tema instantaneamente do cache para não piscar a tela
 const getLocalTheme = () => localStorage.getItem('mi_theme') || 'Inferia (Vermelho)';
