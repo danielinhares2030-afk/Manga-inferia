@@ -6,9 +6,9 @@ import { db } from './firebase';
 const RARITIES = {
   common: { color: 'text-gray-400', bg: 'bg-gray-400/20', border: 'border-gray-400', label: 'Comum' },
   rare: { color: 'text-blue-400', bg: 'bg-blue-400/20', border: 'border-blue-400', label: 'Raro' },
-  epic: { color: 'text-purple-400', bg: 'bg-purple-400/20', border: 'border-purple-400', label: 'Epico' },
-  legendary: { color: 'text-yellow-400', bg: 'bg-yellow-400/20', border: 'border-yellow-400', label: 'Lendario' },
-  mythical: { color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500', label: 'Mitico' }
+  epic: { color: 'text-purple-400', bg: 'bg-purple-400/20', border: 'border-purple-400', label: 'Épico' },
+  legendary: { color: 'text-yellow-400', bg: 'bg-yellow-400/20', border: 'border-yellow-400', label: 'Lendário' },
+  mythical: { color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500', label: 'Mítico' }
 };
 
 const FALLBACK_POOL = [
@@ -19,10 +19,10 @@ const FALLBACK_POOL = [
   { id: 'e_vinh', type: 'efeito', rarity: 'legendary', name: 'Vinheta Sombria' },
   { id: 'e_part', type: 'efeito', rarity: 'mythical', name: 'Partículas Siderais' },
   { id: 'm_ouro', type: 'moldura', rarity: 'legendary', name: 'Aura Dourada', color: '#FFD700' },
-  { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro Abissal', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
+  { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
 ];
 
-const RelicsView = ({ user, perfil }) => {
+const RelicsView = ({ user, perfil = {} }) => {
   const [opening, setOpening] = useState(false);
   const [reward, setReward] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -37,12 +37,17 @@ const RelicsView = ({ user, perfil }) => {
         } else {
           setRelicsPool(FALLBACK_POOL);
         }
-      } catch(err) { setRelicsPool(FALLBACK_POOL); }
+      } catch(err) { 
+        setRelicsPool(FALLBACK_POOL); 
+      }
     };
     fetchPool();
   }, []);
 
   const getRandomItem = () => {
+    // TRAVA DE SEGURANÇA 1: Se o pool estiver vazio, força o uso do fallback na mesma hora
+    const currentPool = relicsPool.length > 0 ? relicsPool : FALLBACK_POOL;
+
     const rand = Math.random() * 100;
     let targetRarity = 'common';
     if (rand > 50 && rand <= 80) targetRarity = 'rare';
@@ -50,8 +55,12 @@ const RelicsView = ({ user, perfil }) => {
     else if (rand > 93 && rand <= 98) targetRarity = 'legendary';
     else if (rand > 98) targetRarity = 'mythical';
 
-    const possibleItems = relicsPool.filter(i => i.rarity === targetRarity);
-    return possibleItems.length > 0 ? possibleItems[Math.floor(Math.random() * possibleItems.length)] : relicsPool[Math.floor(Math.random() * relicsPool.length)];
+    const possibleItems = currentPool.filter(i => i.rarity === targetRarity);
+    
+    // TRAVA DE SEGURANÇA 2: Nunca tenta ler de um array vazio
+    return possibleItems.length > 0 
+      ? possibleItems[Math.floor(Math.random() * possibleItems.length)] 
+      : currentPool[Math.floor(Math.random() * currentPool.length)];
   };
 
   const handleOpenBox = async () => {
@@ -66,8 +75,12 @@ const RelicsView = ({ user, perfil }) => {
     setProcessing(true);
 
     try {
-      const newXP = Math.max(0, (perfil.xp || 0) - cost);
       const droppedItem = getRandomItem();
+      
+      // TRAVA DE SEGURANÇA 3: Se der erro feio e o item sumir, aborta sem quebrar a tela
+      if (!droppedItem) throw new Error("Falha ao puxar item.");
+
+      const newXP = Math.max(0, (perfil.xp || 0) - cost);
 
       await setDoc(doc(db, 'usuarios', user.uid), { xp: newXP }, { merge: true });
       const invRef = doc(db, 'usuarios', user.uid, 'inventario', droppedItem.id + '_' + Date.now());
@@ -82,6 +95,9 @@ const RelicsView = ({ user, perfil }) => {
       setProcessing(false);
     }
   };
+
+  // Prepara visual de raridade com proteção extra
+  const activeRarity = reward && reward.rarity && RARITIES[reward.rarity] ? RARITIES[reward.rarity] : RARITIES['common'];
 
   return (
     <div className="min-h-screen bg-[#050508] pb-24 font-nunito relative overflow-hidden">
@@ -115,20 +131,21 @@ const RelicsView = ({ user, perfil }) => {
 
       {opening && reward && (
         <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 no-hue">
-          <div className={`absolute inset-0 bg-[radial-gradient(circle_at_center,${RARITIES[reward.rarity].color.replace('text-', 'rgba(').replace('-400', ',0.2)')}_0%,transparent_70%)] animate-pulse`}></div>
           
-          <div className={`relative z-10 flex flex-col items-center p-10 rounded-3xl border-4 ${RARITIES[reward.rarity].border} bg-[#050508] shadow-[0_0_100px_${RARITIES[reward.rarity].color.replace('text-', 'var(--tw-').replace('-400', '-500)')}] animate-in slide-in-from-bottom-10`}>
+          <div className={`relative z-10 flex flex-col items-center p-10 rounded-3xl border-4 ${activeRarity.border} bg-[#050508] shadow-2xl animate-in slide-in-from-bottom-10`}>
             {reward.rarity === 'mythical' && <Sparkles className="absolute -top-8 text-red-500 animate-spin" size={64} />}
-            <span className={`text-[10px] font-black uppercase tracking-widest mb-6 px-4 py-1.5 rounded-full ${RARITIES[reward.rarity].bg} ${RARITIES[reward.rarity].color} shadow-lg`}>
-              {RARITIES[reward.rarity].label} - {reward.type}
+            
+            <span className={`text-[10px] font-black uppercase tracking-widest mb-6 px-4 py-1.5 rounded-full ${activeRarity.bg} ${activeRarity.color} shadow-lg`}>
+              {activeRarity.label} - {reward.type || 'Item'}
             </span>
-            <h2 className="font-teko text-4xl text-white text-center mb-8 drop-shadow-md">{reward.name}</h2>
+            
+            <h2 className="font-teko text-4xl text-white text-center mb-8 drop-shadow-md">{reward.name || 'Recompensa'}</h2>
             
             {reward.type === 'avatar' || reward.type === 'capa' ? (
-              <img src={reward.image} className="w-40 h-40 object-cover rounded-2xl border-2 border-white/20 mb-8 shadow-2xl" alt="loot" />
+              <img src={reward.image || ''} className="w-40 h-40 object-cover rounded-2xl border-2 border-white/20 mb-8 shadow-2xl" alt="loot" />
             ) : (
               <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center border-2 border-white/20 mb-8 shadow-xl">
-                <Box size={56} className={RARITIES[reward.rarity].color} />
+                <Box size={56} className={activeRarity.color} />
               </div>
             )}
             
