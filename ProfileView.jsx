@@ -27,9 +27,9 @@ const compressImage = (file, callback) => {
 const RARITIES = {
   common: { color: 'text-gray-400', bg: 'bg-gray-400/20', border: 'border-gray-400', label: 'Comum' },
   rare: { color: 'text-blue-400', bg: 'bg-blue-400/20', border: 'border-blue-400', label: 'Raro' },
-  epic: { color: 'text-purple-400', bg: 'bg-purple-400/20', border: 'border-purple-400', label: 'Epico' },
-  legendary: { color: 'text-yellow-400', bg: 'bg-yellow-400/20', border: 'border-yellow-400', label: 'Lendario' },
-  mythical: { color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500', label: 'Mitico' }
+  epic: { color: 'text-purple-400', bg: 'bg-purple-400/20', border: 'border-purple-400', label: 'Épico' },
+  legendary: { color: 'text-yellow-400', bg: 'bg-yellow-400/20', border: 'border-yellow-400', label: 'Lendário' },
+  mythical: { color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500', label: 'Mítico' }
 };
 
 const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = () => {}, onMangaClick }) => {
@@ -45,7 +45,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const [loadingReator, setLoadingReator] = useState(false);
 
   const user = auth.currentUser;
-
   const safePerfil = perfil || {};
   const safeBiblioteca = Array.isArray(biblioteca) ? biblioteca : [];
   const eq = safePerfil.equipamentos || {};
@@ -93,7 +92,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         await setDoc(doc(db, 'usuarios', user.uid), { equipamentos: equipamentosAtualizados }, { merge: true });
       }
       if (window.mostrarAviso) window.mostrarAviso(`${item.name} Equipado!`);
-    } catch(err) { console.error(err); }
+    } catch(err) {}
   };
 
   const unequipItem = async (item) => {
@@ -110,7 +109,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         delete equipamentosAtualizados[item.type];
         await setDoc(doc(db, 'usuarios', user.uid), { equipamentos: equipamentosAtualizados }, { merge: true });
       }
-    } catch(err) { console.error(err); }
+    } catch(err) {}
   };
 
   const toggleSetting = async (field) => {
@@ -288,13 +287,12 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
             <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-2xl p-10 flex flex-col items-center justify-center text-center shadow-lg">
               <Package size={40} className="text-[#2A0A0A] mb-4" />
               <p className="text-[#A7ADBE] font-bold text-sm">Seu inventário está vazio.</p>
-              <button onClick={() => setActiveTab('gacha')} className="mt-4 text-[#CC0000] text-xs font-bold uppercase tracking-wider underline hover:text-white transition-colors">Abrir Caixas</button>
+              <button onClick={() => setActiveTab('caixa')} className="mt-4 text-[#CC0000] text-xs font-bold uppercase tracking-wider underline hover:text-white transition-colors">Abrir Caixa Inferia</button>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {inventario.map(item => {
                 const rar = RARITIES[item?.rarity] || RARITIES['common'];
-                // Checa se está equipado dependendo do tipo
                 let isEquipped = false;
                 if (item.type === 'tema') isEquipped = safePerfil.tema === item.name;
                 else if (item.type === 'efeito') isEquipped = safePerfil.efeitoVisual === item.name;
@@ -414,13 +412,13 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
             <h3 className="text-xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2">LEITOR</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE]">Leitura Paginada (Mangas)</span>
+                <span className="text-sm font-bold text-[#A7ADBE]">Leitura Paginada</span>
                 <button onClick={() => toggleSetting('modoPaginado')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.modoPaginado ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.modoPaginado ? 'left-7' : 'left-1'}`}></div>
                 </button>
               </div>
               <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE]">Scroll Suave Vertical</span>
+                <span className="text-sm font-bold text-[#A7ADBE]">Scroll Suave</span>
                 <button onClick={() => toggleSetting('scrollSuave')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.scrollSuave ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.scrollSuave ? 'left-7' : 'left-1'}`}></div>
                 </button>
