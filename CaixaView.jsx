@@ -22,34 +22,33 @@ const FALLBACK_POOL = [
   { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
 ];
 
-const RelicsView = ({ user, perfil = {} }) => {
+const CaixaView = ({ user, perfil = {} }) => {
   const [opening, setOpening] = useState(false);
   const [reward, setReward] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [relicsPool, setRelicsPool] = useState([]);
+  const [itemsPool, setItemsPool] = useState([]);
 
   useEffect(() => {
     const fetchPool = async () => {
       try {
         const snap = await getDocs(collection(db, 'reliquias_pool'));
         if (!snap.empty) {
-          setRelicsPool(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+          setItemsPool(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         } else {
-          setRelicsPool(FALLBACK_POOL);
+          setItemsPool(FALLBACK_POOL);
         }
       } catch(err) { 
-        setRelicsPool(FALLBACK_POOL); 
+        setItemsPool(FALLBACK_POOL); 
       }
     };
     fetchPool();
   }, []);
 
   const getRandomItem = () => {
-    // TRAVA DE SEGURANÇA 1: Se o pool estiver vazio, força o uso do fallback na mesma hora
-    const currentPool = relicsPool.length > 0 ? relicsPool : FALLBACK_POOL;
-
+    const currentPool = itemsPool.length > 0 ? itemsPool : FALLBACK_POOL;
     const rand = Math.random() * 100;
     let targetRarity = 'common';
+    
     if (rand > 50 && rand <= 80) targetRarity = 'rare';
     else if (rand > 80 && rand <= 93) targetRarity = 'epic';
     else if (rand > 93 && rand <= 98) targetRarity = 'legendary';
@@ -57,7 +56,6 @@ const RelicsView = ({ user, perfil = {} }) => {
 
     const possibleItems = currentPool.filter(i => i.rarity === targetRarity);
     
-    // TRAVA DE SEGURANÇA 2: Nunca tenta ler de um array vazio
     return possibleItems.length > 0 
       ? possibleItems[Math.floor(Math.random() * possibleItems.length)] 
       : currentPool[Math.floor(Math.random() * currentPool.length)];
@@ -76,8 +74,6 @@ const RelicsView = ({ user, perfil = {} }) => {
 
     try {
       const droppedItem = getRandomItem();
-      
-      // TRAVA DE SEGURANÇA 3: Se der erro feio e o item sumir, aborta sem quebrar a tela
       if (!droppedItem) throw new Error("Falha ao puxar item.");
 
       const newXP = Math.max(0, (perfil.xp || 0) - cost);
@@ -89,14 +85,12 @@ const RelicsView = ({ user, perfil = {} }) => {
       setReward(droppedItem);
       setOpening(true);
     } catch (err) {
-      console.error(err);
       if (window.mostrarAviso) window.mostrarAviso("Erro ao abrir a caixa.", 'error');
     } finally {
       setProcessing(false);
     }
   };
 
-  // Prepara visual de raridade com proteção extra
   const activeRarity = reward && reward.rarity && RARITIES[reward.rarity] ? RARITIES[reward.rarity] : RARITIES['common'];
 
   return (
@@ -107,10 +101,10 @@ const RelicsView = ({ user, perfil = {} }) => {
         <h2 className="font-anime text-3xl md:text-4xl text-white tracking-widest flex items-center justify-center gap-3 drop-shadow-[0_0_20px_#CC0000] mb-2">
           CAIXA INFERIA
         </h2>
-        <p className="text-[#A7ADBE] text-xs md:text-sm font-bold uppercase tracking-widest mb-10">Desbloqueie o poder oculto.</p>
+        <p className="text-[#A7ADBE] text-xs md:text-sm font-bold uppercase tracking-widest mb-10">Desbloqueie itens para sua conta.</p>
         
         <div className="bg-[#0A0505]/80 backdrop-blur-md border border-[#2A0A0A] rounded-2xl px-8 py-4 inline-flex flex-col items-center shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-12">
-          <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">Poder Acumulado</span>
+          <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">XP Disponível</span>
           <div className="flex items-center gap-2"><Zap size={20} className="text-[#FF3333]" /><span className="font-teko text-3xl text-white leading-none mt-1">{perfil.xp || 0} XP</span></div>
         </div>
 
@@ -131,7 +125,6 @@ const RelicsView = ({ user, perfil = {} }) => {
 
       {opening && reward && (
         <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 no-hue">
-          
           <div className={`relative z-10 flex flex-col items-center p-10 rounded-3xl border-4 ${activeRarity.border} bg-[#050508] shadow-2xl animate-in slide-in-from-bottom-10`}>
             {reward.rarity === 'mythical' && <Sparkles className="absolute -top-8 text-red-500 animate-spin" size={64} />}
             
@@ -150,7 +143,7 @@ const RelicsView = ({ user, perfil = {} }) => {
             )}
             
             <button onClick={() => setOpening(false)} className="px-10 py-4 bg-white text-black font-black rounded-full uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.5)]">
-              COLETAR ITEM
+              COLETAR
             </button>
           </div>
         </div>
@@ -159,4 +152,4 @@ const RelicsView = ({ user, perfil = {} }) => {
   );
 };
 
-export default RelicsView;
+export default CaixaView;
