@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PackageOpen, Zap, Loader2, Sparkles, Box } from 'lucide-react';
-import { doc, setDoc, collection, addDoc, onSnapshot, getDocs } from 'firebase/firestore';
+import { PackageOpen, Zap, Loader2, Sparkles, Box, Flame } from 'lucide-react';
+import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
 const RARITIES = {
@@ -11,7 +11,6 @@ const RARITIES = {
   mythical: { color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500', label: 'Mitico' }
 };
 
-// Fallback de itens caso o Admin App ainda não tenha enviado nada
 const FALLBACK_POOL = [
   { id: 't_roxo', type: 'tema', rarity: 'rare', name: 'Abismo (Roxo)' },
   { id: 't_azul', type: 'tema', rarity: 'rare', name: 'Gelo (Azul)' },
@@ -23,22 +22,22 @@ const FALLBACK_POOL = [
   { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro Abissal', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
 ];
 
-const GachaView = ({ user, perfil }) => {
+const RelicsView = ({ user, perfil }) => {
   const [opening, setOpening] = useState(false);
   const [reward, setReward] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [gachaPool, setGachaPool] = useState([]);
+  const [relicsPool, setRelicsPool] = useState([]);
 
   useEffect(() => {
     const fetchPool = async () => {
       try {
-        const snap = await getDocs(collection(db, 'gacha_pool'));
+        const snap = await getDocs(collection(db, 'reliquias_pool'));
         if (!snap.empty) {
-          setGachaPool(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+          setRelicsPool(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         } else {
-          setGachaPool(FALLBACK_POOL);
+          setRelicsPool(FALLBACK_POOL);
         }
-      } catch(err) { setGachaPool(FALLBACK_POOL); }
+      } catch(err) { setRelicsPool(FALLBACK_POOL); }
     };
     fetchPool();
   }, []);
@@ -51,16 +50,16 @@ const GachaView = ({ user, perfil }) => {
     else if (rand > 93 && rand <= 98) targetRarity = 'legendary';
     else if (rand > 98) targetRarity = 'mythical';
 
-    const possibleItems = gachaPool.filter(i => i.rarity === targetRarity);
-    return possibleItems.length > 0 ? possibleItems[Math.floor(Math.random() * possibleItems.length)] : gachaPool[Math.floor(Math.random() * gachaPool.length)];
+    const possibleItems = relicsPool.filter(i => i.rarity === targetRarity);
+    return possibleItems.length > 0 ? possibleItems[Math.floor(Math.random() * possibleItems.length)] : relicsPool[Math.floor(Math.random() * relicsPool.length)];
   };
 
   const handleOpenBox = async () => {
     if (processing || !user) return;
-    const cost = 500; // Custa 500 XP
+    const cost = 500; 
 
     if ((perfil.xp || 0) < cost) {
-      if (window.mostrarAviso) window.mostrarAviso("XP Insuficiente!", 'error');
+      if (window.mostrarAviso) window.mostrarAviso("XP Insuficiente para abrir a caixa!", 'error');
       return;
     }
 
@@ -70,10 +69,7 @@ const GachaView = ({ user, perfil }) => {
       const newXP = Math.max(0, (perfil.xp || 0) - cost);
       const droppedItem = getRandomItem();
 
-      // Salva XP deduzido
       await setDoc(doc(db, 'usuarios', user.uid), { xp: newXP }, { merge: true });
-      
-      // Salva item no Inventário do Usuário
       const invRef = doc(db, 'usuarios', user.uid, 'inventario', droppedItem.id + '_' + Date.now());
       await setDoc(invRef, { ...droppedItem, acquiredAt: new Date().toISOString() }, { merge: true });
 
@@ -81,7 +77,7 @@ const GachaView = ({ user, perfil }) => {
       setOpening(true);
     } catch (err) {
       console.error(err);
-      if (window.mostrarAviso) window.mostrarAviso("Erro ao abrir caixa.", 'error');
+      if (window.mostrarAviso) window.mostrarAviso("Erro ao abrir a caixa.", 'error');
     } finally {
       setProcessing(false);
     }
@@ -92,26 +88,26 @@ const GachaView = ({ user, perfil }) => {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#CC0000]/10 rounded-full blur-[100px] pointer-events-none"></div>
       
       <div className="pt-28 px-4 pb-8 relative z-10 text-center">
-        <h2 className="font-anime text-4xl text-white tracking-widest flex items-center justify-center gap-3 drop-shadow-[0_0_20px_#CC0000] mb-2">
-          CAIXA DO ABISMO
+        <h2 className="font-anime text-3xl md:text-4xl text-white tracking-widest flex items-center justify-center gap-3 drop-shadow-[0_0_20px_#CC0000] mb-2">
+          CAIXA INFERIA
         </h2>
-        <p className="text-[#A7ADBE] text-sm font-bold uppercase tracking-widest mb-10">Desbloqueie Temas, Efeitos e Avatares.</p>
+        <p className="text-[#A7ADBE] text-xs md:text-sm font-bold uppercase tracking-widest mb-10">Desbloqueie o poder oculto.</p>
         
         <div className="bg-[#0A0505]/80 backdrop-blur-md border border-[#2A0A0A] rounded-2xl px-8 py-4 inline-flex flex-col items-center shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-12">
-          <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">XP Atual</span>
-          <div className="flex items-center gap-2"><Zap size={20} className="text-[#FF3333]" /><span className="font-teko text-3xl text-white leading-none mt-1">{perfil.xp || 0}</span></div>
+          <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">Poder Acumulado</span>
+          <div className="flex items-center gap-2"><Zap size={20} className="text-[#FF3333]" /><span className="font-teko text-3xl text-white leading-none mt-1">{perfil.xp || 0} XP</span></div>
         </div>
 
         <div className="max-w-xs mx-auto">
           <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#CC0000]/30 rounded-3xl p-8 flex flex-col items-center relative overflow-hidden shadow-[0_0_40px_rgba(204,0,0,0.2)] group hover:border-[#CC0000] transition-all">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(204,0,0,0.2)_0%,transparent_70%)] opacity-50 group-hover:opacity-100 transition-opacity"></div>
             
-            <PackageOpen size={80} className="text-[#CC0000] mb-6 drop-shadow-[0_0_15px_#CC0000] group-hover:animate-bounce relative z-10" strokeWidth={1.5} />
-            <h3 className="font-teko text-3xl text-white mb-2 relative z-10">CAIXA MISTERIOSA</h3>
-            <p className="text-[10px] text-[#A7ADBE] uppercase font-bold tracking-widest mb-6 relative z-10">Contém 1 Item de Personalização</p>
+            <PackageOpen size={80} className="text-[#CC0000] mb-6 drop-shadow-[0_0_15px_#CC0000] group-hover:animate-pulse relative z-10" strokeWidth={1.5} />
+            <h3 className="font-teko text-4xl text-white mb-2 relative z-10">CAIXA INFERIA</h3>
+            <p className="text-[10px] text-[#A7ADBE] uppercase font-bold tracking-widest mb-6 relative z-10 text-center">Contém 1 item de personalização</p>
             
             <button onClick={handleOpenBox} disabled={processing} className="w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-4 rounded-xl font-bold tracking-widest shadow-[0_0_20px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase relative z-10 hover:scale-105 transition-transform disabled:opacity-50">
-              {processing ? <Loader2 className="animate-spin" size={24} /> : 'ABRIR POR 500 XP'}
+              {processing ? <Loader2 className="animate-spin" size={24} /> : 'ABRIR (500 XP)'}
             </button>
           </div>
         </div>
@@ -137,7 +133,7 @@ const GachaView = ({ user, perfil }) => {
             )}
             
             <button onClick={() => setOpening(false)} className="px-10 py-4 bg-white text-black font-black rounded-full uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.5)]">
-              COLETAR
+              COLETAR ITEM
             </button>
           </div>
         </div>
@@ -146,4 +142,4 @@ const GachaView = ({ user, perfil }) => {
   );
 };
 
-export default GachaView;
+export default RelicsView;
