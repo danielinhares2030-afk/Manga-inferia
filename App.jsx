@@ -19,6 +19,23 @@ const CaixaView = lazy(() => import('./CaixaView'));
 const getLocalTheme = () => localStorage.getItem('mi_theme') || 'Inferia (Vermelho)';
 const getLocalEffect = () => localStorage.getItem('mi_effect') || 'Nenhum';
 
+const getHueFromName = (name) => {
+  if (!name) return '0deg';
+  const n = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  
+  if (n.includes('vermelho') || n.includes('inferia') || n.includes('sangue')) return '0deg';
+  if (n.includes('roxo') || n.includes('abismo') || n.includes('void')) return '260deg';
+  if (n.includes('azul') || n.includes('gelo') || n.includes('frost') || n.includes('blue')) return '210deg';
+  if (n.includes('verde') || n.includes('toxico') || n.includes('miasma') || n.includes('bioquimico')) return '120deg';
+  if (n.includes('ouro') || n.includes('gold') || n.includes('zenith') || n.includes('amarelo')) return '45deg';
+  
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash % 360) + 'deg';
+};
+
 const CustomLoader = () => (
   <div className="flex flex-col items-center justify-center h-screen bg-[#050508] no-hue">
     <div className="relative w-16 h-16 flex items-center justify-center animate-pulse">
@@ -204,13 +221,7 @@ const AppContent = () => {
     } catch (err) { changeTab('details'); }
   };
 
-  const hueRotationMap = {
-    'Inferia (Vermelho)': '0deg',
-    'Abismo (Roxo)': '260deg',
-    'Gelo (Azul)': '210deg',
-    'Tóxico (Verde)': '120deg'
-  };
-  const themeHue = hueRotationMap[perfil.tema] || '0deg';
+  const themeHue = getHueFromName(perfil.tema);
 
   const globais = `
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
@@ -220,6 +231,8 @@ const AppContent = () => {
     .font-nunito { font-family: 'Nunito', sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes slash-in { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(0); opacity: 0; } }
+    @keyframes shimmer-slide { 100% { transform: translateX(100%); } }
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img, .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
   `;
