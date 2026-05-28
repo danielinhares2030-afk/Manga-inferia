@@ -38,8 +38,8 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const [editProfileModal, setEditProfileModal] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [historyScreen, setHistoryScreen] = useState(false);
-  const [notifScreen, setNotifScreen] = useState(false);
+  const [historyModal, setHistoryModal] = useState(false);
+  const [notifModal, setNotifModal] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
   const [notificacoes, setNotificacoes] = useState([]); 
   const [loadingReator, setLoadingReator] = useState(false);
@@ -251,11 +251,11 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
           <div className="pl-4 mb-6">
             <h3 className="font-anime text-sm md:text-base font-bold tracking-widest uppercase text-[#A7ADBE] mb-4 border-l-2 border-[#2A0A0A] pl-3 leading-none mt-2">Conta</h3>
             <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4 pr-4 snap-x">
-              <button onClick={() => setHistoryScreen(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg">
+              <button onClick={() => setHistoryModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg">
                 <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#7A3CFF] border border-[#7A3CFF]/20"><History size={16} /></div>
                 <span className="text-sm font-bold text-left tracking-wide">Histórico<br/>Detalhado</span>
               </button>
-              <button onClick={() => setNotifScreen(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg relative">
+              <button onClick={() => setNotifModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg relative">
                 {notificacoes.length > 0 && notificacoes.some(n => !n.read) && <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-[#CC0000] rounded-full animate-ping"></div>}
                 <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#FF8C00] border border-[#FF8C00]/20"><Bell size={16} /></div>
                 <span className="text-sm font-bold text-left tracking-wide">Central de<br/>Avisos</span>
@@ -323,11 +323,13 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       )}
 
       {editProfileModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 no-hue">
-          <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto hide-scrollbar font-nunito relative shadow-[0_0_50px_rgba(204,0,0,0.3)]">
-            <button onClick={() => setEditProfileModal(false)} disabled={isSavingProfile} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#1A0505] rounded-full p-1"><X size={20} /></button>
-            <h3 className="text-xl md:text-2xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2 leading-none mt-1">EDITAR</h3>
-            <div className="space-y-4">
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 no-hue animate-in fade-in duration-200">
+          <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
+              <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2 leading-none mt-1">EDITAR PERFIL</h3>
+              <button onClick={() => setEditProfileModal(false)} disabled={isSavingProfile} className="text-[#A7ADBE] hover:text-white bg-[#0A0505] rounded-full p-1.5 border border-[#2A0A0A]"><X size={18} /></button>
+            </div>
+            <div className="overflow-y-auto hide-scrollbar p-6 space-y-4">
               <div>
                 <label className="text-xs font-bold text-[#A7ADBE] uppercase block mb-2">Imagem de Perfil</label>
                 <div className="flex items-center gap-3">
@@ -354,108 +356,96 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
                 <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">País</label><input type="text" name="pais" value={editForm.pais || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
                 <div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Biografia</label><textarea name="biografia" value={editForm.biografia || ''} onChange={handleEditChange} rows="3" className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none resize-none"></textarea></div>
               </div>
+              <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-4 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
+                {isSavingProfile ? <Loader2 className="animate-spin" size={20} /> : 'SALVAR'}
+              </button>
             </div>
-            <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-6 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
-              {isSavingProfile ? <Loader2 className="animate-spin" size={20} /> : 'SALVAR'}
-            </button>
           </div>
         </div>
       )}
 
-      {historyScreen && (
-        <div className="fixed inset-0 z-[999999] bg-[#050508] flex flex-col font-nunito animate-in slide-in-from-right duration-300 no-hue">
-          <div className="flex items-center justify-between p-5 border-b border-[#2A0A0A] bg-[#0A0505]/95 backdrop-blur-md">
-            <button onClick={() => setHistoryScreen(false)} className="text-[#A7ADBE] hover:text-white transition-colors">
-              <ArrowLeft size={24} />
-            </button>
-            <h2 className="font-anime text-xl text-[#F5F7FF] tracking-widest">HISTÓRICO</h2>
-            <div className="w-6"></div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto hide-scrollbar p-4 bg-[#050508]">
-            {safeBiblioteca.length > 0 ? (
-              <div className="space-y-4 max-w-2xl mx-auto">
-                {safeBiblioteca.map(manga => (
-                  <div key={manga.id} onClick={() => { setHistoryScreen(false); onMangaClick && onMangaClick(manga.id, manga.ultimoCapId); }} className="flex gap-4 bg-[#0A0505] p-3 rounded-2xl border border-[#2A0A0A] items-center cursor-pointer hover:border-[#7A3CFF]/50 transition-all shadow-lg group">
-                    <img src={manga.capaUrl || manga.img} className="w-16 h-24 object-cover rounded-xl border border-[#1A0505]" alt="" />
-                    <div className="flex-1">
-                      <h4 className="text-base font-bold text-white mb-1 group-hover:text-[#7A3CFF] transition-colors">{manga.nome || manga.title}</h4>
-                      <p className="text-xs text-[#A7ADBE] font-bold uppercase mb-3 tracking-widest">Cap. {manga.capAtual || 1} • Progresso {manga.progresso || 0}%</p>
-                      <div className="w-full h-1.5 bg-[#140505] rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-[#7A3CFF] to-[#A070FF]" style={{ width: `${manga.progresso || 0}%` }}></div>
-                      </div>
+      {historyModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 no-hue animate-in fade-in duration-200">
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
+              <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#7A3CFF] pl-2 leading-none mt-1">HISTÓRICO</h3>
+              <button onClick={() => setHistoryModal(false)} className="text-[#A7ADBE] hover:text-white bg-[#0A0505] rounded-full p-1.5 border border-[#2A0A0A]"><X size={18} /></button>
+            </div>
+            <div className="overflow-y-auto hide-scrollbar p-4 space-y-3">
+              {safeBiblioteca.length > 0 ? safeBiblioteca.map(manga => (
+                <div key={manga.id} onClick={() => { setHistoryModal(false); onMangaClick && onMangaClick(manga.id, manga.ultimoCapId); }} className="flex gap-4 bg-[#140505] p-3 rounded-2xl border border-[#2A0A0A] items-center cursor-pointer hover:border-[#7A3CFF]/50 transition-all group">
+                  <img src={manga.capaUrl || manga.img} className="w-14 h-20 object-cover rounded-xl border border-[#0A0505]" alt="" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-white mb-1 group-hover:text-[#7A3CFF] transition-colors">{manga.nome || manga.title}</h4>
+                    <p className="text-[10px] text-[#A7ADBE] font-bold uppercase mb-2 tracking-widest">Cap. {manga.capAtual || 1} • {manga.progresso || 0}%</p>
+                    <div className="w-full h-1.5 bg-[#0A0505] rounded-full overflow-hidden">
+                      <div className="h-full bg-[#7A3CFF]" style={{ width: `${manga.progresso || 0}%` }}></div>
                     </div>
-                    <ChevronRight className="text-[#2A0A0A] group-hover:text-[#7A3CFF] mr-2" size={24} />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-[#A7ADBE]">
-                <History size={48} className="text-[#2A0A0A] mb-4" />
-                <p className="text-sm font-bold uppercase tracking-widest">Nenhuma leitura registrada</p>
-              </div>
-            )}
+                  <ChevronRight className="text-[#2A0A0A] group-hover:text-[#7A3CFF] mr-1" size={20} />
+                </div>
+              )) : (
+                <div className="flex flex-col items-center justify-center py-10 text-[#A7ADBE]">
+                  <History size={40} className="text-[#2A0A0A] mb-3" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Nenhuma leitura registrada</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {notifScreen && (
-        <div className="fixed inset-0 z-[999999] bg-[#050508] flex flex-col font-nunito animate-in slide-in-from-right duration-300 no-hue">
-          <div className="flex items-center justify-between p-5 border-b border-[#2A0A0A] bg-[#0A0505]/95 backdrop-blur-md">
-            <button onClick={() => setNotifScreen(false)} className="text-[#A7ADBE] hover:text-white transition-colors">
-              <ArrowLeft size={24} />
-            </button>
-            <h2 className="font-anime text-xl text-[#F5F7FF] tracking-widest">AVISOS</h2>
-            <button onClick={() => setNotificacoes(notificacoes.map(n => ({ ...n, read: true })))} className="text-[10px] uppercase font-bold text-[#FF8C00] hover:text-white bg-[#1A0505] border border-[#FF8C00]/20 px-3 py-1.5 rounded-lg transition-colors">
-              Ler Tudo
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto hide-scrollbar p-4 bg-[#050508]">
-            {notificacoes.length > 0 ? (
-              <div className="space-y-4 max-w-2xl mx-auto">
-                {notificacoes.map(n => (
-                  <div key={n.id} className={`p-5 rounded-2xl border transition-all shadow-lg flex gap-4 items-start ${n.read ? 'bg-[#0A0505] border-[#2A0A0A] opacity-60' : 'bg-[#140505] border-[#FF8C00]/40 shadow-[0_0_15px_rgba(255,140,0,0.1)]'}`}>
-                    <div className={`mt-1 w-3 h-3 rounded-full shrink-0 ${n.read ? 'bg-[#2A0A0A]' : 'bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]'}`}></div>
-                    <div className="flex-1">
-                      <p className={`text-sm ${n.read ? 'text-[#A7ADBE]' : 'text-white font-bold tracking-wide'}`}>{n.text}</p>
-                      <p className="text-[10px] text-[#777] font-bold uppercase tracking-widest mt-2">{n.time}</p>
-                    </div>
+      {notifModal && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 no-hue animate-in fade-in duration-200">
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
+              <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#FF8C00] pl-2 leading-none mt-1">AVISOS</h3>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setNotificacoes(notificacoes.map(n => ({ ...n, read: true })))} className="text-[10px] uppercase font-bold tracking-widest text-[#FF8C00] hover:text-white">Ler Tudo</button>
+                <button onClick={() => setNotifModal(false)} className="text-[#A7ADBE] hover:text-white bg-[#0A0505] rounded-full p-1.5 border border-[#2A0A0A]"><X size={18} /></button>
+              </div>
+            </div>
+            <div className="overflow-y-auto hide-scrollbar p-4 space-y-3">
+              {notificacoes.length > 0 ? notificacoes.map(n => (
+                <div key={n.id} className={`p-4 rounded-2xl border transition-all flex gap-4 items-start ${n.read ? 'bg-[#0A0505] border-[#2A0A0A] opacity-60' : 'bg-[#140505] border-[#FF8C00]/40 shadow-[0_0_15px_rgba(255,140,0,0.1)]'}`}>
+                  <div className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${n.read ? 'bg-[#2A0A0A]' : 'bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]'}`}></div>
+                  <div className="flex-1">
+                    <p className={`text-sm ${n.read ? 'text-[#A7ADBE]' : 'text-white font-bold tracking-wide'}`}>{n.text}</p>
+                    <p className="text-[10px] text-[#777] font-bold uppercase tracking-widest mt-1.5">{n.time}</p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-[#A7ADBE]">
-                <Bell size={48} className="text-[#2A0A0A] mb-4" />
-                <p className="text-sm font-bold uppercase tracking-widest">Tudo limpo por aqui</p>
-              </div>
-            )}
+                </div>
+              )) : (
+                <div className="flex flex-col items-center justify-center py-10 text-[#A7ADBE]">
+                  <Bell size={40} className="text-[#2A0A0A] mb-3" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Tudo limpo por aqui</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {settingsModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 no-hue">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-sm font-nunito relative">
-            <button onClick={() => setSettingsModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white"><X size={20} /></button>
-            <h3 className="text-xl font-bold mb-6 text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2">LEITOR</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE]">Leitura Paginada</span>
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 no-hue animate-in fade-in duration-200">
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl w-full max-w-sm flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
+              <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2 leading-none mt-1">LEITOR</h3>
+              <button onClick={() => setSettingsModal(false)} className="text-[#A7ADBE] hover:text-white bg-[#0A0505] rounded-full p-1.5 border border-[#2A0A0A]"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between p-4 bg-[#140505] rounded-2xl border border-[#2A0A0A]">
+                <span className="text-sm font-bold text-[#A7ADBE] tracking-wide">Leitura Paginada</span>
                 <button onClick={() => toggleSetting('modoPaginado')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.modoPaginado ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.modoPaginado ? 'left-7' : 'left-1'}`}></div>
                 </button>
               </div>
-              <div className="flex items-center justify-between p-3 bg-[#140505] rounded-xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE]">Scroll Suave</span>
+              <div className="flex items-center justify-between p-4 bg-[#140505] rounded-2xl border border-[#2A0A0A]">
+                <span className="text-sm font-bold text-[#A7ADBE] tracking-wide">Scroll Suave</span>
                 <button onClick={() => toggleSetting('scrollSuave')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.scrollSuave ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
                   <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.scrollSuave ? 'left-7' : 'left-1'}`}></div>
                 </button>
               </div>
             </div>
-            <button onClick={() => setSettingsModal(false)} className="mt-6 w-full border border-[#A7ADBE] text-[#A7ADBE] py-3 rounded-xl font-bold hover:bg-[#A7ADBE] hover:text-black transition-colors uppercase tracking-widest text-xs">
-              FECHAR
-            </button>
           </div>
         </div>
       )}
