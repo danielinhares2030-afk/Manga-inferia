@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PackageOpen, Coins, Loader2, Sparkles, Box, Calendar, X } from 'lucide-react';
+import { PackageOpen, Coins, Loader2, Sparkles, Box, Calendar, X, Zap } from 'lucide-react';
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -62,12 +62,14 @@ const CaixaView = ({ user, perfil = {} }) => {
       : currentPool[Math.floor(Math.random() * currentPool.length)];
   };
 
-  const handleOpenBox = async () => {
+  const handleOpenBox = async (currency) => {
     if (processing || !user) return;
-    const cost = 100; 
+    
+    const cost = currency === 'moedas' ? 100 : 500;
+    const userBalance = currency === 'moedas' ? (perfil.moedas || 0) : (perfil.xp || 0);
 
-    if ((perfil.moedas || 0) < cost) {
-      if (window.mostrarAviso) window.mostrarAviso("Moedas insuficientes!", 'error');
+    if (userBalance < cost) {
+      if (window.mostrarAviso) window.mostrarAviso(`Sem ${currency.toUpperCase()} suficiente!`, 'error');
       return;
     }
 
@@ -77,9 +79,11 @@ const CaixaView = ({ user, perfil = {} }) => {
       const droppedItem = getRandomItem();
       if (!droppedItem) throw new Error("Falha ao puxar item.");
 
-      const newMoedas = Math.max(0, (perfil.moedas || 0) - cost);
+      const newBalance = Math.max(0, userBalance - cost);
+      
+      const updateData = currency === 'moedas' ? { moedas: newBalance } : { xp: newBalance };
 
-      await setDoc(doc(db, 'usuarios', user.uid), { moedas: newMoedas }, { merge: true });
+      await setDoc(doc(db, 'usuarios', user.uid), updateData, { merge: true });
       const invRef = doc(db, 'usuarios', user.uid, 'inventario', droppedItem.id + '_' + Date.now());
       await setDoc(invRef, { ...droppedItem, acquiredAt: new Date().toISOString() }, { merge: true });
 
@@ -134,9 +138,15 @@ const CaixaView = ({ user, perfil = {} }) => {
         </h2>
         <p className="text-[#A7ADBE] text-xs md:text-sm font-bold uppercase tracking-widest mb-10">Desbloqueie itens para sua conta.</p>
         
-        <div className="bg-[#0A0505]/80 backdrop-blur-md border border-[#2A0A0A] rounded-2xl px-8 py-4 inline-flex flex-col items-center shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-12">
-          <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">Moedas Inferiais</span>
-          <div className="flex items-center gap-2"><Coins size={20} className="text-[#FFD700]" /><span className="font-teko text-3xl text-white leading-none mt-1">{perfil.moedas || 0}</span></div>
+        <div className="flex justify-center gap-4 mb-12">
+          <div className="bg-[#0A0505]/80 backdrop-blur-md border border-[#2A0A0A] rounded-2xl px-6 py-4 flex flex-col items-center shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">Moedas</span>
+            <div className="flex items-center gap-2"><Coins size={18} className="text-[#FFD700]" /><span className="font-teko text-2xl text-white leading-none mt-1">{perfil.moedas || 0}</span></div>
+          </div>
+          <div className="bg-[#0A0505]/80 backdrop-blur-md border border-[#2A0A0A] rounded-2xl px-6 py-4 flex flex-col items-center shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">XP Atual</span>
+            <div className="flex items-center gap-2"><Zap size={18} className="text-[#FF3333]" /><span className="font-teko text-2xl text-white leading-none mt-1">{perfil.xp || 0}</span></div>
+          </div>
         </div>
 
         <div className="max-w-xs mx-auto space-y-4">
@@ -147,18 +157,23 @@ const CaixaView = ({ user, perfil = {} }) => {
             <h3 className="font-teko text-4xl text-white mb-2 relative z-10">CAIXA INFERIA</h3>
             <p className="text-[10px] text-[#A7ADBE] uppercase font-bold tracking-widest mb-6 relative z-10 text-center">Contém 1 item de personalização</p>
             
-            <button onClick={handleOpenBox} disabled={processing} className="w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-4 rounded-xl font-bold tracking-widest shadow-[0_0_20px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase relative z-10 hover:scale-105 transition-transform disabled:opacity-50">
-              {processing ? <Loader2 className="animate-spin" size={24} /> : 'ABRIR (100 MOEDAS)'}
-            </button>
+            <div className="flex gap-2 w-full relative z-10">
+              <button onClick={() => handleOpenBox('moedas')} disabled={processing} className="flex-1 bg-gradient-to-br from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-wider shadow-[0_0_20px_rgba(204,0,0,0.4)] flex flex-col justify-center items-center font-teko text-lg uppercase transition-transform hover:scale-[1.02] disabled:opacity-50">
+                {processing ? <Loader2 className="animate-spin" size={20} /> : <span className="flex items-center gap-1"><Coins size={14} className="text-[#FFD700]"/> 100</span>}
+              </button>
+              <button onClick={() => handleOpenBox('xp')} disabled={processing} className="flex-1 bg-gradient-to-br from-[#1A0505] to-[#0A0505] border border-[#CC0000]/50 text-white py-3.5 rounded-xl font-bold tracking-wider shadow-[0_0_20px_rgba(204,0,0,0.2)] flex flex-col justify-center items-center font-teko text-lg uppercase transition-transform hover:scale-[1.02] hover:bg-[#CC0000]/10 disabled:opacity-50">
+                {processing ? <Loader2 className="animate-spin" size={20} /> : <span className="flex items-center gap-1"><Zap size={14} className="text-[#FF3333]"/> 500</span>}
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-2 w-full">
             <button onClick={handleDailyClaim} disabled={processing} className="flex-1 flex items-center justify-center gap-2 text-white text-xs font-bold uppercase tracking-widest border border-[#FFD700]/30 bg-[#1A1505] py-3.5 rounded-xl transition-all shadow-md hover:border-[#FFD700] disabled:opacity-50">
-              <Calendar size={16} className="text-[#FFD700]" /> Coleta Diária
+              <Calendar size={16} className="text-[#FFD700]" /> Bônus
             </button>
 
-            <button onClick={() => setShowPoolModal(true)} className="flex-1 text-[#A7ADBE] hover:text-white text-xs font-bold uppercase tracking-widest border border-[#2A0A0A] bg-[#0A0505] py-3.5 rounded-xl transition-all shadow-md">
-              Conteúdo
+            <button onClick={() => setShowPoolModal(true)} className="flex-1 text-[#A7ADBE] hover:text-white text-xs font-bold uppercase tracking-widest border border-[#2A0A0A] bg-[#0A0505] py-3.5 rounded-xl transition-all shadow-md hover:border-white/20">
+              Recompensas
             </button>
           </div>
         </div>
@@ -203,7 +218,7 @@ const CaixaView = ({ user, perfil = {} }) => {
             <h2 className="font-teko text-4xl text-white text-center mb-8 drop-shadow-md">{reward.name || 'Recompensa'}</h2>
             
             {reward.type === 'avatar' || reward.type === 'capa' ? (
-              <img src={reward.image || ''} className="w-40 h-40 object-cover rounded-2xl border-2 border-white/20 mb-8 shadow-2xl" alt="loot" />
+              <img src={reward.image || ''} className="w-40 h-40 object-cover rounded-2xl border-2 border-white/20 mb-8 shadow-2xl" alt="" />
             ) : (
               <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center border-2 border-white/20 mb-8 shadow-xl">
                 <Box size={56} className={activeRarity.color} />
