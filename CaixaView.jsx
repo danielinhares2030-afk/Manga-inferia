@@ -79,15 +79,31 @@ const CaixaView = ({ user, perfil = {} }) => {
       const droppedItem = getRandomItem();
       if (!droppedItem) throw new Error("Falha ao puxar item.");
 
-      const newBalance = Math.max(0, userBalance - cost);
-      
-      const updateData = currency === 'moedas' ? { moedas: newBalance } : { xp: newBalance };
+      const invSnap = await getDocs(collection(db, 'usuarios', user.uid, 'inventario'));
+      const userInvIds = invSnap.docs.map(d => d.data().id);
+      const isDuplicate = userInvIds.includes(droppedItem.id);
 
-      await setDoc(doc(db, 'usuarios', user.uid), updateData, { merge: true });
-      const invRef = doc(db, 'usuarios', user.uid, 'inventario', droppedItem.id + '_' + Date.now());
-      await setDoc(invRef, { ...droppedItem, acquiredAt: new Date().toISOString() }, { merge: true });
+      let newMoedas = perfil.moedas || 0;
+      let newXp = perfil.xp || 0;
 
-      setReward(droppedItem);
+      if (currency === 'moedas') newMoedas -= cost;
+      else newXp -= cost;
+
+      if (isDuplicate) {
+        const convertXp = 200;
+        const convertMoedas = 30;
+        newMoedas += convertMoedas;
+        newXp += convertXp;
+
+        await setDoc(doc(db, 'usuarios', user.uid), { xp: newXp, moedas: newMoedas }, { merge: true });
+        setReward({ ...droppedItem, isDuplicate: true, convertXp, convertMoedas });
+      } else {
+        await setDoc(doc(db, 'usuarios', user.uid), { xp: newXp, moedas: newMoedas }, { merge: true });
+        const invRef = doc(db, 'usuarios', user.uid, 'inventario', droppedItem.id + '_' + Date.now());
+        await setDoc(invRef, { ...droppedItem, acquiredAt: new Date().toISOString() }, { merge: true });
+        setReward({ ...droppedItem, isDuplicate: false });
+      }
+
       setOpening(true);
     } catch (err) {
       if (window.mostrarAviso) window.mostrarAviso("Erro ao abrir a caixa.", 'error');
@@ -209,23 +225,40 @@ const CaixaView = ({ user, perfil = {} }) => {
       {opening && reward && (
         <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 no-hue">
           <div className={`relative z-10 flex flex-col items-center p-10 rounded-3xl border-4 ${activeRarity.border} bg-[#050508] shadow-2xl animate-in slide-in-from-bottom-10`}>
+            
             {reward.rarity === 'mythical' && <Sparkles className="absolute -top-8 text-red-500 animate-spin" size={64} />}
             
-            <span className={`text-[10px] font-black uppercase tracking-widest mb-6 px-4 py-1.5 rounded-full ${activeRarity.bg} ${activeRarity.color} shadow-lg`}>
+            {reward.isDuplicate && (
+              <div className="absolute -top-4 bg-[#FF3333] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-[0_0_15px_#FF3333] whitespace-nowrap animate-bounce">
+                Item Repetido!
+              </div>
+            )}
+
+            <span className={`text-[10px] font-black uppercase tracking-widest mt-2 mb-6 px-4 py-1.5 rounded-full ${reward.isDuplicate ? 'bg-[#2A0A0A] text-[#A7ADBE]' : `${activeRarity.bg} ${activeRarity.color}`} shadow-lg`}>
               {activeRarity.label} - {reward.type || 'Item'}
             </span>
             
-            <h2 className="font-teko text-4xl text-white text-center mb-8 drop-shadow-md">{reward.name || 'Recompensa'}</h2>
+            <h2 className="font-teko text-4xl text-white text-center mb-4 drop-shadow-md">{reward.name || 'Recompensa'}</h2>
             
-            {reward.type === 'avatar' || reward.type === 'capa' ? (
-              <img src={reward.image || ''} className="w-40 h-40 object-cover rounded-2xl border-2 border-white/20 mb-8 shadow-2xl" alt="" />
+            {reward.isDuplicate ? (
+              <div className="flex gap-4 mb-8 bg-[#1A0505] border border-[#FF3333]/30 px-6 py-3 rounded-2xl animate-in zoom-in duration-300">
+                <div className="flex flex-col items-center"><span className="text-[#FFD700] font-teko text-2xl leading-none">+{reward.convertMoedas}</span><span className="text-[9px] uppercase font-bold text-[#A7ADBE]">Moedas</span></div>
+                <div className="w-px bg-[#2A0A0A]"></div>
+                <div className="flex flex-col items-center"><span className="text-[#FF3333] font-teko text-2xl leading-none">+{reward.convertXp}</span><span className="text-[9px] uppercase font-bold text-[#A7ADBE]">XP</span></div>
+              </div>
             ) : (
-              <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center border-2 border-white/20 mb-8 shadow-xl">
-                <Box size={56} className={activeRarity.color} />
+              <div className="mb-6">
+                {reward.type === 'avatar' || reward.type === 'capa' ? (
+                  <img src={reward.image || ''} className="w-40 h-40 object-cover rounded-2xl border-2 border-white/20 shadow-2xl" alt="" />
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center border-2 border-white/20 shadow-xl">
+                    <Box size={56} className={activeRarity.color} />
+                  </div>
+                )}
               </div>
             )}
             
-            <button onClick={() => setOpening(false)} className="px-10 py-4 bg-white text-black font-black rounded-full uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.5)]">
+            <button onClick={() => setOpening(false)} className="px-10 py-4 bg-white text-black font-black rounded-full uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.5)] mt-2">
               COLETAR
             </button>
           </div>
