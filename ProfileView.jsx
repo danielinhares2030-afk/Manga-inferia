@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar, Palette, Package } from 'lucide-react';
+import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar, Palette, Package, Coins } from 'lucide-react';
 import { doc, setDoc, collection, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { auth, db } from './firebase'; 
@@ -71,10 +71,10 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
     try {
       await setDoc(doc(db, 'usuarios', user.uid), cleanForm, { merge: true });
       setEditProfileModal(false);
-      if (window.mostrarAviso) window.mostrarAviso("Perfil atualizado com sucesso!");
+      if (window.mostrarAviso) window.mostrarAviso("Perfil updated com sucesso!");
     } catch (error) {
       if (window.mostrarAviso) window.mostrarAviso("Erro ao salvar.", 'error');
-    } finally { setIsSavingProfile(false); }
+    } finaly { setIsSavingProfile(false); }
   };
 
   const equipItem = async (item) => {
@@ -132,7 +132,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       if (window.mostrarAviso) window.mostrarAviso(`🔥 Fornalha ativada! +${gainedXP} XP`);
     } catch (err) { 
       if (window.mostrarAviso) window.mostrarAviso("Erro ao queimar fragmentos.", 'error');
-    } finally { setLoadingReator(false); }
+    } finaly { setLoadingReator(false); }
   };
 
   const xpAtual = safePerfil.xp || 0;
@@ -151,14 +151,14 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   return (
     <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen relative">
       <div className="relative w-full h-64 md:h-80 bg-[#0A0505] border-b border-[#2A0A0A]">
-        <img src={currentCover} alt="Cover" className="w-full h-full object-cover opacity-60 object-center no-hue" loading="lazy" />
+        <img src={currentCover} alt="" className="w-full h-full object-cover opacity-60 object-center no-hue" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/30 to-transparent"></div>
       </div>
 
       <div className="px-6 relative flex flex-col md:flex-row items-start md:items-end gap-5 -mt-20 md:-mt-24 z-10 mb-6">
         <div className="relative">
           <div className="w-28 h-28 md:w-36 md:h-36 shrink-0 rounded-full border-4 border-[#050508] overflow-hidden bg-[#0A0505] shadow-[0_0_30px_rgba(204,0,0,0.3)] relative z-10" style={{ boxShadow: eq.moldura ? `0 0 20px ${eq.moldura.color}` : 'none', borderColor: eq.moldura ? eq.moldura.color : '#050508' }}>
-            <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover no-hue" loading="lazy" />
+            <img src={currentAvatar} alt="" className="w-full h-full object-cover no-hue" loading="lazy" />
           </div>
           {eq.moldura?.animated && <div className="absolute inset-0 w-full h-full rounded-full border-[6px] border-[#CC0000] animate-ping opacity-50 z-0"></div>}
         </div>
@@ -202,7 +202,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
 
       {activeSubTab === 'overview' ? (
         <>
-          <div className="grid grid-cols-3 gap-3 px-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 mb-6">
             <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#2A0A0A] rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
               <Clock size={18} className="text-[#CC0000] mb-2" />
               <span className="text-2xl font-black text-[#F5F7FF] font-teko">{horasLendoReal}<span className="text-sm font-nunito text-[#FF3333] ml-0.5">h</span></span>
@@ -217,6 +217,11 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
               <History size={18} className="text-[#FF8C00] mb-2" />
               <span className="text-2xl font-black text-[#F5F7FF] font-teko">{capitulosLidosReais}</span>
               <span className="text-[10px] text-[#A7ADBE] uppercase tracking-wider mt-1 text-center font-bold">Caps. Lidos</span>
+            </div>
+            <div className="bg-gradient-to-b from-[#1A1505] to-[#0A0505] border border-[#FFD700]/30 rounded-2xl p-4 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+              <Coins size={18} className="text-[#FFD700] mb-2" />
+              <span className="text-2xl font-black text-[#F5F7FF] font-teko">{safePerfil.moedas || 0}</span>
+              <span className="text-[10px] text-[#FFD700] uppercase tracking-wider mt-1 text-center font-bold">Moedas</span>
             </div>
           </div>
 
@@ -326,7 +331,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
               <div>
                 <label className="text-xs font-bold text-[#A7ADBE] uppercase block mb-2">Imagem de Perfil</label>
                 <div className="flex items-center gap-3">
-                  <img src={editForm.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} className="w-12 h-12 rounded-full border border-[#2A0A0A] object-cover" alt="preview" />
+                  <img src={editForm.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} className="w-12 h-12 rounded-full border border-[#2A0A0A] object-cover" alt="" />
                   <label className="flex-1 bg-[#140505] border border-[#2A0A0A] text-[#A7ADBE] hover:text-white rounded-lg py-3 px-3 text-xs font-bold cursor-pointer text-center flex justify-center items-center gap-2 transition-colors">
                     <ImageIcon size={16} /> GALERIA
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'avatar')} />
@@ -336,7 +341,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
               <div>
                 <label className="text-xs font-bold text-[#A7ADBE] uppercase block mb-2">Capa de Fundo</label>
                 <div className="flex items-center gap-3">
-                  <img src={editForm.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} className="w-16 h-10 rounded border border-[#2A0A0A] object-cover" alt="preview" />
+                  <img src={editForm.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} className="w-16 h-10 rounded border border-[#2A0A0A] object-cover" alt="" />
                   <label className="flex-1 bg-[#140505] border border-[#2A0A0A] text-[#A7ADBE] hover:text-white rounded-lg py-3 px-3 text-xs font-bold cursor-pointer text-center flex justify-center items-center gap-2 transition-colors">
                     <ImageIcon size={16} /> GALERIA
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'capa')} />
@@ -365,7 +370,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
             <div className="overflow-y-auto hide-scrollbar space-y-3 flex-1 pr-2">
               {safeBiblioteca.length > 0 ? safeBiblioteca.map(manga => (
                 <div key={manga.id} onClick={() => { setHistoryModal(false); onMangaClick && onMangaClick(manga.id, manga.ultimoCapId); }} className="flex gap-3 bg-[#140505] p-3 rounded-xl border border-[#2A0A0A] items-center cursor-pointer hover:border-[#7A3CFF]/50 transition-colors">
-                  <img src={manga.capaUrl || manga.img} className="w-12 h-16 object-cover rounded border border-[#0A0505]" alt="capa" />
+                  <img src={manga.capaUrl || manga.img} className="w-12 h-16 object-cover rounded border border-[#0A0505]" alt="" />
                   <div className="flex-1">
                     <h4 className="text-sm font-bold text-white mb-1">{manga.nome || manga.title}</h4>
                     <p className="text-[10px] text-[#A7ADBE] font-bold uppercase mb-1">Cap. {manga.capAtual || 1} • {manga.progresso || 0}%</p>
