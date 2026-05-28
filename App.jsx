@@ -19,6 +19,16 @@ const CaixaView = lazy(() => import('./CaixaView'));
 const getLocalTheme = () => localStorage.getItem('mi_theme') || 'Inferia (Vermelho)';
 const getLocalEffect = () => localStorage.getItem('mi_effect') || 'Nenhum';
 
+const CustomLoader = () => (
+  <div className="flex flex-col items-center justify-center h-screen bg-[#050508] no-hue">
+    <div className="relative w-16 h-16 flex items-center justify-center animate-pulse">
+      <div className="absolute inset-0 border-t-2 border-[#CC0000] rounded-full animate-spin"></div>
+      <div className="absolute inset-2 border-b-2 border-[#FF3333] rounded-full animate-spin reverse"></div>
+      <Sparkles className="text-[#CC0000] animate-pulse" size={20} />
+    </div>
+  </div>
+);
+
 const AppContent = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [lastMainTab, setLastMainTab] = useState('home');
@@ -78,8 +88,8 @@ const AppContent = () => {
   useEffect(() => {
     document.title = `Manga Inferia | ${activeTab.toUpperCase()}`;
     const fontTimer = setTimeout(() => setFontsLoaded(true), 400); 
-    const timer1 = setTimeout(() => setSplashFade(true), 2800); 
-    const timer2 = setTimeout(() => setSplashVisible(false), 3300); 
+    const timer1 = setTimeout(() => setSplashFade(true), 2400); 
+    const timer2 = setTimeout(() => setSplashVisible(false), 2900); 
     return () => { clearTimeout(timer1); clearTimeout(timer2); clearTimeout(fontTimer); };
   }, [activeTab]);
 
@@ -210,8 +220,6 @@ const AppContent = () => {
     .font-nunito { font-family: 'Nunito', sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    @keyframes slash-in { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(0); opacity: 0; } }
-    @keyframes shimmer-slide { 100% { transform: translateX(100%); } }
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img, .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
   `;
@@ -238,19 +246,17 @@ const AppContent = () => {
       </div>
 
       {splashVisible && (
-        <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed inset-0 z-[99999] bg-[#030305] flex flex-col justify-center items-center transition-all duration-1000 no-hue ${splashFade ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 scale-100'}`}>
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(204,0,0,0.2)_0%,transparent_60%)] animate-pulse"></div>
-          <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#CC0000] shadow-[0_0_30px_5px_rgba(204,0,0,0.8)] animate-[slash-in_1.5s_ease-out_forwards] origin-center"></div>
-          <div className={`relative z-10 flex flex-col items-center transition-all duration-700 delay-300 w-full px-6 ${fontsLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <h1 className="font-anime text-[11vw] sm:text-7xl text-white tracking-widest drop-shadow-[0_0_40px_rgba(204,0,0,1)] mb-3 relative flex flex-wrap justify-center gap-x-3 text-center leading-tight">
+        <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed inset-0 z-[99999] bg-[#030305] flex flex-col justify-center items-center transition-all duration-700 no-hue ${splashFade ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(204,0,0,0.15)_0%,transparent_60%)] animate-pulse"></div>
+          <div className={`relative z-10 flex flex-col items-center transition-all duration-1000 w-full px-6 ${fontsLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+            <h1 className="font-anime text-[11vw] sm:text-7xl text-white tracking-widest drop-shadow-[0_0_50px_rgba(204,0,0,1)] mb-4 relative flex flex-wrap justify-center gap-x-3 text-center leading-tight">
               <span>MANGA</span><span className="text-[#CC0000]">INFERIA</span>
             </h1>
-            <p className="font-teko text-lg sm:text-2xl text-[#CC0000] tracking-[0.4em] uppercase animate-pulse drop-shadow-[0_0_10px_#CC0000] text-center">Abrindo o Abismo</p>
+            <Loader2 className="animate-spin text-[#CC0000] mt-2" size={32} />
           </div>
         </div>
       )}
 
-      {/* HEADER SUPERIOR TRANSPARENTE SEM MARGENS QUE QUEBRAM O LAYOUT */}
       {!isFullScreenView && user && !splashVisible && (
         <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
@@ -260,22 +266,21 @@ const AppContent = () => {
             <div className="flex items-center gap-4">
               <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => changeTab('search')} />
               <div onClick={() => changeTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
-                <img src={perfil.equipamentos?.avatar?.image || perfil.avatar} alt="User" className="w-full h-full object-cover no-hue" />
+                <img src={perfil.equipamentos?.avatar?.image || perfil.avatar} alt="" className="w-full h-full object-cover no-hue" />
               </div>
             </div>
           </div>
         </header>
       )}
 
-      {/* REMOVIDO O pt-20 DO MAIN - O CONTEÚDO VAI VAZAR LINDAMENTE POR TRÁS DO HEADER DE NOVO */}
       <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white">
         {!user && !authLoading && !splashVisible ? (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[#050202]"><Loader2 className="animate-spin text-[#CC0000]" /></div>}>
+          <Suspense fallback={<CustomLoader />}>
             <LoginView />
           </Suspense>
         ) : user && !splashVisible ? (
           <main className={isFullScreenView ? "pb-0" : "pb-32"}>
-            <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#CC0000] w-12 h-12" /></div>}>
+            <Suspense fallback={<CustomLoader />}>
               {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={changeTab} />}
