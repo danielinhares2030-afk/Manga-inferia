@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PackageOpen, Zap, Loader2, Sparkles, Box, Flame, X } from 'lucide-react';
+import { PackageOpen, Coins, Loader2, Sparkles, Box, Calendar, X } from 'lucide-react';
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -22,7 +22,7 @@ const FALLBACK_POOL = [
   { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
 ];
 
-const GachaView = ({ user, perfil = {} }) => {
+const CaixaView = ({ user, perfil = {} }) => {
   const [opening, setOpening] = useState(false);
   const [reward, setReward] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -64,10 +64,10 @@ const GachaView = ({ user, perfil = {} }) => {
 
   const handleOpenBox = async () => {
     if (processing || !user) return;
-    const cost = 500; 
+    const cost = 100; 
 
-    if ((perfil.xp || 0) < cost) {
-      if (window.mostrarAviso) window.mostrarAviso("XP Insuficiente para abrir a caixa!", 'error');
+    if ((perfil.moedas || 0) < cost) {
+      if (window.mostrarAviso) window.mostrarAviso("Moedas insuficientes!", 'error');
       return;
     }
 
@@ -77,9 +77,9 @@ const GachaView = ({ user, perfil = {} }) => {
       const droppedItem = getRandomItem();
       if (!droppedItem) throw new Error("Falha ao puxar item.");
 
-      const newXP = Math.max(0, (perfil.xp || 0) - cost);
+      const newMoedas = Math.max(0, (perfil.moedas || 0) - cost);
 
-      await setDoc(doc(db, 'usuarios', user.uid), { xp: newXP }, { merge: true });
+      await setDoc(doc(db, 'usuarios', user.uid), { moedas: newMoedas }, { merge: true });
       const invRef = doc(db, 'usuarios', user.uid, 'inventario', droppedItem.id + '_' + Date.now());
       await setDoc(invRef, { ...droppedItem, acquiredAt: new Date().toISOString() }, { merge: true });
 
@@ -87,6 +87,35 @@ const GachaView = ({ user, perfil = {} }) => {
       setOpening(true);
     } catch (err) {
       if (window.mostrarAviso) window.mostrarAviso("Erro ao abrir a caixa.", 'error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDailyClaim = async () => {
+    if (processing || !user) return;
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (perfil.ultimoResgateDiario === today) {
+      if (window.mostrarAviso) window.mostrarAviso("Você já coletou seu bônus de hoje!", 'error');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const minMoedas = 15;
+      const maxMoedas = 25;
+      const rewardCoins = Math.floor(Math.random() * (maxMoedas - minMoedas + 1)) + minMoedas;
+      const newMoedas = (perfil.moedas || 0) + rewardCoins;
+      
+      await setDoc(doc(db, 'usuarios', user.uid), { 
+        moedas: newMoedas,
+        ultimoResgateDiario: today
+      }, { merge: true });
+      
+      if (window.mostrarAviso) window.mostrarAviso(`+${rewardCoins} Moedas obtidas com sucesso!`);
+    } catch (err) {
+      if (window.mostrarAviso) window.mostrarAviso("Erro ao resgatar o bônus diário.", 'error');
     } finally {
       setProcessing(false);
     }
@@ -106,26 +135,32 @@ const GachaView = ({ user, perfil = {} }) => {
         <p className="text-[#A7ADBE] text-xs md:text-sm font-bold uppercase tracking-widest mb-10">Desbloqueie itens para sua conta.</p>
         
         <div className="bg-[#0A0505]/80 backdrop-blur-md border border-[#2A0A0A] rounded-2xl px-8 py-4 inline-flex flex-col items-center shadow-[0_0_30px_rgba(0,0,0,0.5)] mb-12">
-          <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">XP Disponível</span>
-          <div className="flex items-center gap-2"><Zap size={20} className="text-[#FF3333]" /><span className="font-teko text-3xl text-white leading-none mt-1">{perfil.xp || 0} XP</span></div>
+          <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">Moedas Inferiais</span>
+          <div className="flex items-center gap-2"><Coins size={20} className="text-[#FFD700]" /><span className="font-teko text-3xl text-white leading-none mt-1">{perfil.moedas || 0}</span></div>
         </div>
 
-        <div className="max-w-xs mx-auto">
+        <div className="max-w-xs mx-auto space-y-4">
           <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#CC0000]/30 rounded-3xl p-8 flex flex-col items-center relative overflow-hidden shadow-[0_0_40px_rgba(204,0,0,0.2)] group hover:border-[#CC0000] transition-all">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(204,0,0,0.2)_0%,transparent_70%)] opacity-50 group-hover:opacity-100 transition-opacity"></div>
             
-            <PackageOpen size={80} className="text-[#CC0000] mb-6 drop-shadow-[0_0_15px_#CC0000] group-hover:animate-bounce relative z-10" strokeWidth={1.5} />
+            <PackageOpen size={80} className="text-[#CC0000] mb-6 drop-shadow-[0_0_15px_#CC0000] group-hover:animate-pulse relative z-10" strokeWidth={1.5} />
             <h3 className="font-teko text-4xl text-white mb-2 relative z-10">CAIXA INFERIA</h3>
             <p className="text-[10px] text-[#A7ADBE] uppercase font-bold tracking-widest mb-6 relative z-10 text-center">Contém 1 item de personalização</p>
             
             <button onClick={handleOpenBox} disabled={processing} className="w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-4 rounded-xl font-bold tracking-widest shadow-[0_0_20px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase relative z-10 hover:scale-105 transition-transform disabled:opacity-50">
-              {processing ? <Loader2 className="animate-spin" size={24} /> : 'ABRIR (500 XP)'}
+              {processing ? <Loader2 className="animate-spin" size={24} /> : 'ABRIR (100 MOEDAS)'}
             </button>
           </div>
 
-          <button onClick={() => setShowPoolModal(true)} className="mt-6 text-[#CC0000] hover:text-white text-xs font-bold uppercase tracking-widest border border-[#CC0000]/30 bg-[#140505] px-6 py-2.5 rounded-xl transition-all shadow-md">
-            Visualizar Conteúdo
-          </button>
+          <div className="flex gap-2 w-full">
+            <button onClick={handleDailyClaim} disabled={processing} className="flex-1 flex items-center justify-center gap-2 text-white text-xs font-bold uppercase tracking-widest border border-[#FFD700]/30 bg-[#1A1505] py-3.5 rounded-xl transition-all shadow-md hover:border-[#FFD700] disabled:opacity-50">
+              <Calendar size={16} className="text-[#FFD700]" /> Coleta Diária
+            </button>
+
+            <button onClick={() => setShowPoolModal(true)} className="flex-1 text-[#A7ADBE] hover:text-white text-xs font-bold uppercase tracking-widest border border-[#2A0A0A] bg-[#0A0505] py-3.5 rounded-xl transition-all shadow-md">
+              Conteúdo
+            </button>
+          </div>
         </div>
       </div>
 
@@ -185,4 +220,4 @@ const GachaView = ({ user, perfil = {} }) => {
   );
 };
 
-export default GachaView;
+export default CaixaView;
