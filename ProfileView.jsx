@@ -74,7 +74,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       if (window.mostrarAviso) window.mostrarAviso("Perfil updated com sucesso!");
     } catch (error) {
       if (window.mostrarAviso) window.mostrarAviso("Erro ao salvar.", 'error');
-    } finaly { setIsSavingProfile(false); }
+    } finally { setIsSavingProfile(false); }
   };
 
   const equipItem = async (item) => {
@@ -132,7 +132,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       if (window.mostrarAviso) window.mostrarAviso(`🔥 Fornalha ativada! +${gainedXP} XP`);
     } catch (err) { 
       if (window.mostrarAviso) window.mostrarAviso("Erro ao queimar fragmentos.", 'error');
-    } finaly { setLoadingReator(false); }
+    } finally { setLoadingReator(false); }
   };
 
   const xpAtual = safePerfil.xp || 0;
