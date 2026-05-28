@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PackageOpen, Zap, Loader2, Sparkles, Box, Flame } from 'lucide-react';
+import { PackageOpen, Zap, Loader2, Sparkles, Box, Flame, X } from 'lucide-react';
 import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -22,11 +22,12 @@ const FALLBACK_POOL = [
   { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
 ];
 
-const CaixaView = ({ user, perfil = {} }) => {
+const GachaView = ({ user, perfil = {} }) => {
   const [opening, setOpening] = useState(false);
   const [reward, setReward] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [itemsPool, setItemsPool] = useState([]);
+  const [showPoolModal, setShowPoolModal] = useState(false);
 
   useEffect(() => {
     const fetchPool = async () => {
@@ -92,6 +93,7 @@ const CaixaView = ({ user, perfil = {} }) => {
   };
 
   const activeRarity = reward && reward.rarity && RARITIES[reward.rarity] ? RARITIES[reward.rarity] : RARITIES['common'];
+  const currentDisplayPool = itemsPool.length > 0 ? itemsPool : FALLBACK_POOL;
 
   return (
     <div className="min-h-screen bg-[#050508] pb-24 font-nunito relative overflow-hidden">
@@ -112,7 +114,7 @@ const CaixaView = ({ user, perfil = {} }) => {
           <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#CC0000]/30 rounded-3xl p-8 flex flex-col items-center relative overflow-hidden shadow-[0_0_40px_rgba(204,0,0,0.2)] group hover:border-[#CC0000] transition-all">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(204,0,0,0.2)_0%,transparent_70%)] opacity-50 group-hover:opacity-100 transition-opacity"></div>
             
-            <PackageOpen size={80} className="text-[#CC0000] mb-6 drop-shadow-[0_0_15px_#CC0000] group-hover:animate-pulse relative z-10" strokeWidth={1.5} />
+            <PackageOpen size={80} className="text-[#CC0000] mb-6 drop-shadow-[0_0_15px_#CC0000] group-hover:animate-bounce relative z-10" strokeWidth={1.5} />
             <h3 className="font-teko text-4xl text-white mb-2 relative z-10">CAIXA INFERIA</h3>
             <p className="text-[10px] text-[#A7ADBE] uppercase font-bold tracking-widest mb-6 relative z-10 text-center">Contém 1 item de personalização</p>
             
@@ -120,8 +122,39 @@ const CaixaView = ({ user, perfil = {} }) => {
               {processing ? <Loader2 className="animate-spin" size={24} /> : 'ABRIR (500 XP)'}
             </button>
           </div>
+
+          <button onClick={() => setShowPoolModal(true)} className="mt-6 text-[#CC0000] hover:text-white text-xs font-bold uppercase tracking-widest border border-[#CC0000]/30 bg-[#140505] px-6 py-2.5 rounded-xl transition-all shadow-md">
+            Visualizar Conteúdo
+          </button>
         </div>
       </div>
+
+      {showPoolModal && (
+        <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 no-hue animate-in fade-in duration-300">
+          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative shadow-2xl">
+            <button onClick={() => setShowPoolModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#140505] border border-[#2A0A0A] rounded-full p-1.5 transition-colors">
+              <X size={18} />
+            </button>
+            <h3 className="font-anime text-base text-white tracking-widest border-l-4 border-[#CC0000] pl-2 mb-6 leading-none mt-1">RECOMPENSAS</h3>
+            <div className="overflow-y-auto hide-scrollbar space-y-2 flex-1 pr-1">
+              {currentDisplayPool.map((item, idx) => {
+                const rar = RARITIES[item.rarity] || RARITIES.common;
+                return (
+                  <div key={item.id + idx} className="flex items-center justify-between bg-[#140505] p-3 rounded-xl border border-[#1A0505]">
+                    <div className="flex flex-col min-w-0 flex-1 pr-3">
+                      <span className="text-white text-sm font-bold truncate">{item.name}</span>
+                      <span className="text-[9px] text-[#A7ADBE] uppercase font-black tracking-wider mt-0.5">{item.type}</span>
+                    </div>
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shrink-0 ${rar.bg} ${rar.color}`}>
+                      {rar.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {opening && reward && (
         <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 no-hue">
@@ -152,4 +185,4 @@ const CaixaView = ({ user, perfil = {} }) => {
   );
 };
 
-export default CaixaView;
+export default GachaView;
