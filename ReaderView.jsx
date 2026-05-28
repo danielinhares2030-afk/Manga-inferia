@@ -60,8 +60,14 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     const novoTempoLendo = (perfil?.tempoLendo || 0) + tempoGastoMinutos;
     const novosCapsLidos = (perfil?.capitulosLidos || 0) + 1;
     const earnedXP = Math.floor(Math.random() * 41) + 10; 
+    const rewardCoins = Math.floor(Math.random() * 4) + 2;
     
-    let atualizacoes = { capitulosLidos: novosCapsLidos, tempoLendo: novoTempoLendo, xp: (perfil?.xp || 0) + earnedXP };
+    let atualizacoes = { 
+      capitulosLidos: novosCapsLidos, 
+      tempoLendo: novoTempoLendo, 
+      xp: (perfil?.xp || 0) + earnedXP,
+      moedas: (perfil?.moedas || 0) + rewardCoins
+    };
     
     if (Math.random() <= 0.50) {
       atualizacoes.fragmentos = (perfil?.fragmentos || 0) + 1;
@@ -70,7 +76,7 @@ const ReaderView = ({ capitulo, obra, onBack, onReadChapter, user, perfil }) => 
     }
     
     await setDoc(doc(db, 'usuarios', user.uid), atualizacoes, { merge: true }).catch(err => console.error(err));
-    if (window.mostrarAviso) window.mostrarAviso(`Capítulo concluído! +${earnedXP} XP`);
+    if (window.mostrarAviso) window.mostrarAviso(`Concluído! +${earnedXP} XP e +${rewardCoins} Moedas`);
   }, [rollFeito, user, horaInicioLeitura, perfil]);
 
   useEffect(() => {
