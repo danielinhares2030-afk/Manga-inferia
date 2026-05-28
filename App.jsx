@@ -24,7 +24,7 @@ const getHueFromName = (name) => {
   const n = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   
   if (n.includes('vermelho') || n.includes('inferia') || n.includes('sangue')) return '0deg';
-  if (n.includes('roxo') || n.includes('abismo') || n.includes('void')) return '260deg';
+  if (n.includes('roxo') || n.includes('abismo') || n.includes('void') || n.includes('ametista')) return '260deg';
   if (n.includes('azul') || n.includes('gelo') || n.includes('frost') || n.includes('blue')) return '210deg';
   if (n.includes('verde') || n.includes('toxico') || n.includes('miasma') || n.includes('bioquimico')) return '120deg';
   if (n.includes('ouro') || n.includes('gold') || n.includes('zenith') || n.includes('amarelo')) return '45deg';
@@ -239,18 +239,27 @@ const AppContent = () => {
 
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search' || activeTab === 'caixa';
 
+  const effectStr = (perfil.efeitoVisual || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const showCRT = effectStr.includes('crt') || effectStr.includes('tv') || effectStr.includes('retro') || effectStr.includes('glitch');
+  const showVinheta = effectStr.includes('vinheta') || effectStr.includes('sombra') || effectStr.includes('trevas') || effectStr.includes('escuro');
+  const showParticulas = effectStr.includes('particula') || effectStr.includes('sideral') || effectStr.includes('estrela') || effectStr.includes('espaco');
+  const showFogo = effectStr.includes('ignis') || effectStr.includes('chama') || effectStr.includes('fogo') || effectStr.includes('fenix');
+
   return (
     <React.Fragment>
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      {perfil.efeitoVisual === 'TV Antiga (CRT)' && (
+      {showCRT && (
         <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-40"></div>
       )}
-      {perfil.efeitoVisual === 'Vinheta Sombria' && (
+      {showVinheta && (
         <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_200px_rgba(0,0,0,0.9)_inset]"></div>
       )}
-      {perfil.efeitoVisual === 'Partículas Siderais' && (
+      {showParticulas && (
         <div className="fixed inset-0 pointer-events-none z-[9998] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse"></div>
+      )}
+      {showFogo && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_bottom,rgba(255,50,0,0.2)_0%,transparent_100%)] animate-pulse mix-blend-screen"></div>
       )}
 
       <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : toast.type === 'level_up' ? 'bg-[#1A1005]/95 border-[#FF8C00] text-[#FFB000]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
