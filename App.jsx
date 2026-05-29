@@ -146,9 +146,16 @@ const AppContent = () => {
     const carousel = obras.filter(o => o.isCarousel).slice(0, 5);
     const destaque = [...obras].sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0)).slice(0, 10);
     const recentes = obras.filter(o => o.isRecente);
-    const atualizadas = obras.filter(o => o.isAtualizado);
+    const atualizadas = obras.filter(o => o.isAtualizado).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
     const filtrado = obras.filter(o => (o.nome || '').toLowerCase().includes(searchQuery.toLowerCase()));
-    return { carouselData, obrasDestaque: destaque, obrasRecentes: recentes, obrasAtualizadas: atualizadas, catalogoFiltrado: filtrado };
+    
+    return { 
+      carouselData: carousel, 
+      obrasDestaque: destaque, 
+      obrasRecentes: recentes, 
+      obrasAtualizadas: atualizadas, 
+      catalogoFiltrado: filtrado 
+    };
   }, [obras, searchQuery]);
 
   useEffect(() => {
@@ -300,6 +307,7 @@ const AppContent = () => {
         </div>
       )}
 
+      {/* Cabeçalho */}
       {!isFullScreenView && user && !authLoading && (
         <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508]/95 via-[#050508]/80 to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none backdrop-blur-sm">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
@@ -316,6 +324,7 @@ const AppContent = () => {
         </header>
       )}
 
+      {/* Conteúdo Principal (A prova de tela preta) */}
       <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white">
         {authLoading ? (
           <CustomLoader />
@@ -346,6 +355,7 @@ const AppContent = () => {
         </div>
       )}
 
+      {/* Menu Inferior */}
       {user && !isFullScreenView && !authLoading && (
         <div style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed bottom-0 left-0 w-full z-[9999] px-2 pb-4 pt-2 pointer-events-none text-[#F5F7FF]">
           <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent z-0"></div>
