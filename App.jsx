@@ -148,7 +148,7 @@ const AppContent = () => {
     const recentes = obras.filter(o => o.isRecente);
     const atualizadas = obras.filter(o => o.isAtualizado);
     const filtrado = obras.filter(o => (o.nome || '').toLowerCase().includes(searchQuery.toLowerCase()));
-    return { carouselData: carousel, obrasDestaque: destaque, obrasRecentes: recentes, obrasAtualizadas: atualizadas, catalogoFiltrado: filtrado };
+    return { carouselData, obrasDestaque: destaque, obrasRecentes: recentes, obrasAtualizadas: atualizadas, catalogoFiltrado: filtrado };
   }, [obras, searchQuery]);
 
   useEffect(() => {
@@ -182,11 +182,13 @@ const AppContent = () => {
   const equippedEffect = perfil.equipamentos?.efeito || null;
   const effectCSS = equippedEffect?.css || equippedEffect?.codigoCss || '';
   const effectAnim = equippedEffect?.animacao || equippedEffect?.keyframes || '';
+  const effectHTML = equippedEffect?.html || equippedEffect?.codigoHtml || '';
   const effectUrl = equippedEffect?.image || null;
-  const hasCustomAICode = !!(effectCSS || effectAnim);
+  const hasCustomAICode = !!(effectCSS || effectAnim || effectHTML);
 
-  const effectStr = (!hasCustomAICode && !effectUrl && equippedEffect?.name) 
-    ? equippedEffect.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
+  const effectNameToUse = equippedEffect?.name || perfil.efeitoVisual || '';
+  const effectStr = (!hasCustomAICode && !effectUrl && effectNameToUse) 
+    ? effectNameToUse.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
     : '';
 
   const showCRT = /crt|tv|retro|glitch|pixel|cyber/.test(effectStr);
@@ -211,39 +213,15 @@ const AppContent = () => {
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img:not(.no-hue-effect), .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
 
-    @keyframes sakurafall {
-      0% { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { transform: translateY(105vh) translateX(80px) rotate(540deg); opacity: 0; }
-    }
+    @keyframes sakurafall { 0% { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(105vh) translateX(80px) rotate(540deg); opacity: 0; } }
     .sakura-leaf { position: fixed; background: linear-gradient(135deg, #ffb7c5, #ffa0b5); border-radius: 100% 0 100% 100%; pointer-events: none; z-index: 9998; animation: sakurafall linear infinite; }
-    @keyframes emberrise {
-      0% { transform: translateY(105vh) translateX(0) scale(1); opacity: 0; }
-      15% { opacity: 1; }
-      85% { opacity: 0.8; }
-      100% { transform: translateY(-5vh) translateX(-40px) scale(0.4); opacity: 0; }
-    }
+    @keyframes emberrise { 0% { transform: translateY(105vh) translateX(0) scale(1); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 0.8; } 100% { transform: translateY(-5vh) translateX(-40px) scale(0.4); opacity: 0; } }
     .fire-particle { position: fixed; background: linear-gradient(to top, #ff4500, #ffaa00); border-radius: 50%; pointer-events: none; z-index: 9998; animation: emberrise linear infinite; box-shadow: 0 0 8px #ff4500; }
-    @keyframes snowfall {
-      0% { transform: translateY(-20px) translateX(0); opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { transform: translateY(105vh) translateX(30px); opacity: 0; }
-    }
+    @keyframes snowfall { 0% { transform: translateY(-20px) translateX(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(105vh) translateX(30px); opacity: 0; } }
     .snow-particle { position: fixed; background: #ffffff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: snowfall linear infinite; box-shadow: 0 0 4px #ffffff; }
-    @keyframes starfloat {
-      0% { transform: scale(0); opacity: 0; }
-      50% { opacity: 0.6; }
-      100% { transform: scale(1.3); opacity: 0; }
-    }
+    @keyframes starfloat { 0% { transform: scale(0); opacity: 0; } 50% { opacity: 0.6; } 100% { transform: scale(1.3); opacity: 0; } }
     .star-particle { position: fixed; background: #ffffff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: starfloat ease-in-out infinite; box-shadow: 0 0 6px #ffffff; }
-    @keyframes miasmarise {
-      0% { transform: translateY(105vh) scale(0.8); opacity: 0; filter: blur(2px); }
-      20% { opacity: 0.4; }
-      80% { opacity: 0.4; }
-      100% { transform: translateY(-5vh) scale(1.5); opacity: 0; filter: blur(5px); }
-    }
+    @keyframes miasmarise { 0% { transform: translateY(105vh) scale(0.8); opacity: 0; filter: blur(2px); } 20% { opacity: 0.4; } 80% { opacity: 0.4; } 100% { transform: translateY(-5vh) scale(1.5); opacity: 0; filter: blur(5px); } }
     .poison-particle { position: fixed; background: #32cd32; border-radius: 50%; pointer-events: none; z-index: 9998; animation: miasmarise ease-out infinite; }
   `;
 
@@ -253,7 +231,6 @@ const AppContent = () => {
     <React.Fragment>
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      {/* --- INJEÇÃO DO EFEITO INTELIGENTE DO ADMIN --- */}
       {hasCustomAICode && (
         <style dangerouslySetInnerHTML={{ __html: `
           .ia-custom-effect-layer { ${effectCSS} }
@@ -265,11 +242,14 @@ const AppContent = () => {
         <div className="fixed inset-0 pointer-events-none z-[9998] ia-custom-effect-layer opacity-60 no-hue mix-blend-screen"></div>
       )}
 
-      {effectUrl && (
+      {effectHTML && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] no-hue" dangerouslySetInnerHTML={{ __html: effectHTML }} />
+      )}
+
+      {effectUrl && !effectHTML && (
         <img src={effectUrl} alt="Efeito Equipado" className="fixed inset-0 w-full h-full object-cover pointer-events-none z-[9998] opacity-60 no-hue no-hue-effect mix-blend-screen" />
       )}
 
-      {/* --- FALLBACKS MANUAIS (SÓ RODAM SE O ITEM NÃO TIVER CSS/ANIMACAO DO ADMIN) --- */}
       {showCRT && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-40 mix-blend-screen"></div>}
       {showVinheta && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_250px_rgba(0,0,0,0.95)_inset]"></div>}
       {showOuro && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(255,215,0,0.12)_0%,transparent_100%)] animate-pulse mix-blend-screen shadow-[0_0_100px_rgba(255,215,0,0.05)_inset]"></div>}
@@ -303,14 +283,13 @@ const AppContent = () => {
       )}
       {showDefaultAura && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_150px_rgba(255,255,255,0.08)_inset] animate-pulse"></div>}
 
-      {/* --- RESTO DO CÓDIGO (INTERFACE, AVISOS, ETC) --- */}
       <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
         <Zap size={20} />
         <span className="text-sm tracking-wider font-nunito uppercase">{toast.msg}</span>
       </div>
 
       {splashVisible && (
-        <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed inset-0 z-[99999] bg-[#030305] flex flex-col justify-center items-center transition-all duration-700 no-hue ${splashFade ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed inset-0 z-[999999] bg-[#030305] flex flex-col justify-center items-center transition-all duration-700 no-hue ${splashFade ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(204,0,0,0.15)_0%,transparent_60%)] animate-pulse"></div>
           <div className={`relative z-10 flex flex-col items-center transition-all duration-1000 w-full px-6 ${fontsLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
             <h1 className="font-anime text-[11vw] sm:text-7xl text-white tracking-widest drop-shadow-[0_0_50px_rgba(204,0,0,1)] mb-4 flex flex-wrap justify-center gap-x-3 text-center leading-tight">
@@ -321,13 +300,15 @@ const AppContent = () => {
         </div>
       )}
 
-      {user && !splashVisible && activeTab !== 'reader' && activeTab !== 'details' && (
+      {!isFullScreenView && user && !authLoading && (
         <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508]/95 via-[#050508]/80 to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none backdrop-blur-sm">
-          <div className="flex items-center justify-between max-w-7xl mx-auto pointer-events-auto">
-            <h1 className="font-anime text-base md:text-xl flex gap-1"><span>MANGA</span><span className="text-[#CC0000]">INFERIA</span></h1>
+          <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
+            <h1 className="font-anime text-base md:text-xl shadow-black flex gap-1">
+              <span>MANGA</span><span className="text-[#CC0000]">INFERIA</span>
+            </h1>
             <div className="flex items-center gap-4">
-              <Search size={22} className="text-[#A7ADBE] cursor-pointer" onClick={() => changeTab('search')} />
-              <div onClick={() => changeTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer bg-[#140505]">
+              <Search size={22} className="text-[#A7ADBE] cursor-pointer hover:text-white transition-colors" onClick={() => changeTab('search')} />
+              <div onClick={() => changeTab('profile')} className="w-9 h-9 rounded-full border-2 border-[#2A0A0A] overflow-hidden cursor-pointer hover:border-[#CC0000] transition-colors bg-[#140505]">
                 <img src={perfil.equipamentos?.avatar?.image || perfil.avatar} alt="" className="w-full h-full object-cover no-hue" />
               </div>
             </div>
@@ -336,11 +317,17 @@ const AppContent = () => {
       )}
 
       <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white">
-        {!user && !authLoading && !splashVisible ? <LoginView /> : user && !splashVisible ? (
-          <main className={['details', 'reader', 'search', 'caixa'].includes(activeTab) ? "pb-0" : "pb-32"}>
+        {authLoading ? (
+          <CustomLoader />
+        ) : !user ? (
+          <Suspense fallback={<CustomLoader />}>
+            <LoginView />
+          </Suspense>
+        ) : (
+          <main className={isFullScreenView ? "pb-0" : "pb-32"}>
             <Suspense fallback={<CustomLoader />}>
-              {activeTab === 'home' && <HomeView carouselData={memoObras.carouselData} obrasDestaque={memoObras.obrasDestaque} obrasRecentes={memoObras.obrasRecentes} obrasAtualizadas={memoObras.obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
-              {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={memoObras.catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
+              {activeTab === 'home' && <HomeView carouselData={carouselData} obrasDestaque={obrasDestaque} obrasRecentes={obrasRecentes} obrasAtualizadas={obrasAtualizadas} currentSlide={currentSlide} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
+              {activeTab === 'catalog' && <CatalogView searchQuery={searchQuery} setSearchQuery={setSearchQuery} catalogoFiltrado={catalogoFiltrado} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'ranking' && <RankingView rankingData={todosUsuarios} perfilLogado={{ ...perfil, id: user.uid }} setActiveTab={changeTab} />}
               {activeTab === 'biblioteca' && <LibraryView biblioteca={biblioteca} setSaveModal={setSaveModal} onMangaClick={handleMangaClick} />}
               {activeTab === 'profile' && <ProfileView perfil={perfil} biblioteca={biblioteca} setActiveTab={changeTab} onMangaClick={handleResumeManga} />}
@@ -350,7 +337,7 @@ const AppContent = () => {
               {activeTab === 'reader' && <ReaderView key={selectedCapitulo?.id} capitulo={selectedCapitulo} obra={obras.find(o => o.id === selectedObraId)} onBack={() => changeTab('details')} onReadChapter={handleReadChapter} user={user} perfil={perfil} />}
             </Suspense>
           </main>
-        ) : null}
+        )}
       </div>
 
       {user && (
@@ -359,14 +346,14 @@ const AppContent = () => {
         </div>
       )}
 
-      {user && !['details', 'reader', 'search', 'caixa'].includes(activeTab) && !splashVisible && (
+      {user && !isFullScreenView && !authLoading && (
         <div style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed bottom-0 left-0 w-full z-[9999] px-2 pb-4 pt-2 pointer-events-none text-[#F5F7FF]">
           <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent z-0"></div>
           <div className="flex items-center justify-between bg-[#0A0505]/95 backdrop-blur-xl border border-[#2A0A0A] rounded-2xl px-5 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] pointer-events-auto overflow-x-auto hide-scrollbar gap-2 max-w-lg mx-auto relative z-10">
             {[{ id: 'home', icon: Home, label: 'Home' }, { id: 'catalog', icon: LayoutGrid, label: 'Catálogo' }, { id: 'caixa', icon: PackageOpen, label: 'Caixa Inferia' }, { id: 'ranking', icon: Trophy, label: 'Ranking' }, { id: 'profile', icon: User, label: 'Perfil' }].map(tab => (
-              <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all min-w-[50px] ${activeTab === tab.id ? 'text-[#CC0000] scale-110' : 'text-[#A7ADBE]'}`}>
+              <button key={tab.id} onClick={() => changeTab(tab.id)} className={`flex flex-col items-center gap-1 transition-all duration-300 min-w-[50px] ${activeTab === tab.id ? 'text-[#CC0000] scale-110 drop-shadow-[0_0_5px_#CC0000]' : 'text-[#A7ADBE] hover:text-[#F5F7FF]'}`}>
                 <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                <span className="text-[9px] font-bold uppercase font-teko mt-1">{tab.label}</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest font-teko mt-1">{tab.label}</span>
               </button>
             ))}
           </div>
