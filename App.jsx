@@ -240,27 +240,35 @@ const AppContent = () => {
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search' || activeTab === 'caixa';
 
   const effectStr = (perfil.efeitoVisual || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const showCRT = effectStr.includes('crt') || effectStr.includes('tv') || effectStr.includes('retro') || effectStr.includes('glitch');
-  const showVinheta = effectStr.includes('vinheta') || effectStr.includes('sombra') || effectStr.includes('trevas') || effectStr.includes('escuro');
-  const showParticulas = effectStr.includes('particula') || effectStr.includes('sideral') || effectStr.includes('estrela') || effectStr.includes('espaco');
-  const showFogo = effectStr.includes('ignis') || effectStr.includes('chama') || effectStr.includes('fogo') || effectStr.includes('fenix');
+  const isEquipped = effectStr !== '' && effectStr !== 'nenhum';
+
+  const showCRT = /crt|tv|retro|glitch|pixel|cyber/.test(effectStr);
+  const showVinheta = /vinheta|sombra|trevas|escuro|dark|abismo|void|shadow/.test(effectStr);
+  const showParticulas = /particula|sideral|estrela|espaco|cosmico|galaxia|poeira/.test(effectStr);
+  const showFogo = /ignis|chama|fogo|fenix|inferno|brasa/.test(effectStr);
+  const showSakura = /sakura|petala|flor|primavera|natureza|folha|rosa/.test(effectStr);
+  const showGelo = /gelo|neve|frost|inverno|frio|cristal|nevasca/.test(effectStr);
+  const showVeneno = /toxico|veneno|miasma|acido|quimico|gas|nuclear/.test(effectStr);
+  const showOuro = /ouro|gold|luz|celestial|sagrado|anjo|brilho|divino/.test(effectStr);
+  const showRaio = /raio|trovao|eletrico|tempestade|choque|relampago/.test(effectStr);
+  const showSangue = /sangue|blood|vampiro|carmim|sanguinario/.test(effectStr);
+  const showDefaultAura = isEquipped && !showCRT && !showVinheta && !showParticulas && !showFogo && !showSakura && !showGelo && !showVeneno && !showOuro && !showRaio && !showSangue;
 
   return (
     <React.Fragment>
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      {showCRT && (
-        <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-40"></div>
-      )}
-      {showVinheta && (
-        <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_200px_rgba(0,0,0,0.9)_inset]"></div>
-      )}
-      {showParticulas && (
-        <div className="fixed inset-0 pointer-events-none z-[9998] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse"></div>
-      )}
-      {showFogo && (
-        <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_bottom,rgba(255,50,0,0.2)_0%,transparent_100%)] animate-pulse mix-blend-screen"></div>
-      )}
+      {showCRT && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-40 mix-blend-screen"></div>}
+      {showVinheta && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_250px_rgba(0,0,0,0.95)_inset]"></div>}
+      {showParticulas && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse"></div>}
+      {showFogo && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_bottom,rgba(255,50,0,0.2)_0%,transparent_100%)] animate-pulse mix-blend-screen"></div>}
+      {showSakura && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(circle_at_top_right,rgba(255,183,197,0.25)_0%,transparent_80%)] animate-pulse mix-blend-screen"></div>}
+      {showGelo && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[url('https://www.transparenttextures.com/patterns/snow.png')] opacity-30 animate-pulse"></div>}
+      {showVeneno && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_center,rgba(50,255,50,0.15)_0%,transparent_100%)] animate-pulse mix-blend-screen"></div>}
+      {showOuro && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(255,215,0,0.15)_0%,transparent_100%)] animate-pulse mix-blend-screen shadow-[0_0_100px_rgba(255,215,0,0.1)_inset]"></div>}
+      {showRaio && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(circle_at_center,rgba(0,255,255,0.05)_0%,transparent_100%)] animate-[pulse_0.5s_infinite] mix-blend-screen"></div>}
+      {showSangue && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(150,0,0,0.2)_0%,transparent_100%)] animate-pulse mix-blend-multiply"></div>}
+      {showDefaultAura && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_150px_rgba(255,255,255,0.08)_inset] animate-pulse"></div>}
 
       <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : toast.type === 'level_up' ? 'bg-[#1A1005]/95 border-[#FF8C00] text-[#FFB000]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
         {toast.type === 'error' ? <ShieldAlert size={20} /> : toast.type === 'level_up' ? <Sparkles size={20} className="animate-pulse" /> : <Zap size={20} />}
@@ -280,7 +288,7 @@ const AppContent = () => {
       )}
 
       {!isFullScreenView && user && !splashVisible && (
-        <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none">
+        <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508]/95 via-[#050508]/80 to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none backdrop-blur-sm">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
             <h1 className="font-anime text-base md:text-xl shadow-black flex gap-1">
               <span>MANGA</span><span className="text-[#CC0000]">INFERIA</span>
@@ -311,7 +319,6 @@ const AppContent = () => {
               {activeTab === 'caixa' && <CaixaView user={user} perfil={perfil} />}
               {activeTab === 'search' && <SearchView obras={obras} onBack={() => changeTab(lastMainTab)} onMangaClick={handleMangaClick} />}
               {activeTab === 'details' && <MangaDetailsView obra={obras.find(o => o.id === selectedObraId)} biblioteca={biblioteca} onBack={() => changeTab(lastMainTab)} onReadChapter={handleReadChapter} setSaveModal={setSaveModal} user={user} />}
-              
               {activeTab === 'reader' && (
                 <ReaderView 
                   key={selectedCapitulo?.id} 
