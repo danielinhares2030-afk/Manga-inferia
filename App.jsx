@@ -223,6 +223,16 @@ const AppContent = () => {
 
   const themeHue = getHueFromName(perfil.tema);
 
+  const particleStyles = useMemo(() => {
+    return Array.from({ length: 24 }).map(() => ({
+      left: `${Math.random() * 100}%`,
+      animationDuration: `${Math.random() * 5 + 4}s`,
+      animationDelay: `${Math.random() * 6}s`,
+      size: `${Math.random() * 6 + 8}px`,
+      drift: `${Math.random() * 40 - 20}px`
+    }));
+  }, []);
+
   const globais = `
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
     body { overflow-x: hidden; background-color: #050508; }
@@ -231,16 +241,90 @@ const AppContent = () => {
     .font-nunito { font-family: 'Nunito', sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    @keyframes slash-in { 0% { transform: scaleX(0); opacity: 0; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(0); opacity: 0; } }
-    @keyframes shimmer-slide { 100% { transform: translateX(100%); } }
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img, .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
+
+    @keyframes sakurafall {
+      0% { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(105vh) translateX(80px) rotate(540deg); opacity: 0; }
+    }
+    .sakura-leaf {
+      position: fixed;
+      background: linear-gradient(135deg, #ffb7c5, #ffa0b5);
+      border-radius: 100% 0 100% 100%;
+      pointer-events: none;
+      z-index: 9998;
+      animation: sakurafall linear infinite;
+    }
+
+    @keyframes emberrise {
+      0% { transform: translateY(105vh) translateX(0) scale(1); opacity: 0; }
+      15% { opacity: 1; }
+      85% { opacity: 0.8; }
+      100% { transform: translateY(-5vh) translateX(-40px) scale(0.4); opacity: 0; }
+    }
+    .fire-particle {
+      position: fixed;
+      background: linear-gradient(to top, #ff4500, #ffaa00);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      animation: emberrise linear infinite;
+      box-shadow: 0 0 8px #ff4500;
+    }
+
+    @keyframes snowfall {
+      0% { transform: translateY(-20px) translateX(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(105vh) translateX(30px); opacity: 0; }
+    }
+    .snow-particle {
+      position: fixed;
+      background: #ffffff;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      animation: snowfall linear infinite;
+      box-shadow: 0 0 4px #ffffff;
+    }
+
+    @keyframes starfloat {
+      0% { transform: scale(0); opacity: 0; }
+      50% { opacity: 0.6; }
+      100% { transform: scale(1.3); opacity: 0; }
+    }
+    .star-particle {
+      position: fixed;
+      background: #ffffff;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      animation: starfloat ease-in-out infinite;
+      box-shadow: 0 0 6px #ffffff;
+    }
+
+    @keyframes miasmarise {
+      0% { transform: translateY(105vh) scale(0.8); opacity: 0; filter: blur(2px); }
+      20% { opacity: 0.4; }
+      80% { opacity: 0.4; }
+      100% { transform: translateY(-5vh) scale(1.5); opacity: 0; filter: blur(5px); }
+    }
+    .poison-particle {
+      position: fixed;
+      background: #32cd32;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      animation: miasmarise ease-out infinite;
+    }
   `;
 
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search' || activeTab === 'caixa';
 
   const effectStr = (perfil.efeitoVisual || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const isEquipped = effectStr !== '' && effectStr !== 'nenhum';
 
   const showCRT = /crt|tv|retro|glitch|pixel|cyber/.test(effectStr);
   const showVinheta = /vinheta|sombra|trevas|escuro|dark|abismo|void|shadow/.test(effectStr);
@@ -252,7 +336,6 @@ const AppContent = () => {
   const showOuro = /ouro|gold|luz|celestial|sagrado|anjo|brilho|divino/.test(effectStr);
   const showRaio = /raio|trovao|eletrico|tempestade|choque|relampago/.test(effectStr);
   const showSangue = /sangue|blood|vampiro|carmim|sanguinario/.test(effectStr);
-  const showDefaultAura = isEquipped && !showCRT && !showVinheta && !showParticulas && !showFogo && !showSakura && !showGelo && !showVeneno && !showOuro && !showRaio && !showSangue;
 
   return (
     <React.Fragment>
@@ -260,15 +343,49 @@ const AppContent = () => {
 
       {showCRT && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-40 mix-blend-screen"></div>}
       {showVinheta && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_250px_rgba(0,0,0,0.95)_inset]"></div>}
-      {showParticulas && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse"></div>}
-      {showFogo && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_bottom,rgba(255,50,0,0.2)_0%,transparent_100%)] animate-pulse mix-blend-screen"></div>}
-      {showSakura && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(circle_at_top_right,rgba(255,183,197,0.25)_0%,transparent_80%)] animate-pulse mix-blend-screen"></div>}
-      {showGelo && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[url('https://www.transparenttextures.com/patterns/snow.png')] opacity-30 animate-pulse"></div>}
-      {showVeneno && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_center,rgba(50,255,50,0.15)_0%,transparent_100%)] animate-pulse mix-blend-screen"></div>}
-      {showOuro && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(255,215,0,0.15)_0%,transparent_100%)] animate-pulse mix-blend-screen shadow-[0_0_100px_rgba(255,215,0,0.1)_inset]"></div>}
-      {showRaio && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(circle_at_center,rgba(0,255,255,0.05)_0%,transparent_100%)] animate-[pulse_0.5s_infinite] mix-blend-screen"></div>}
-      {showSangue && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(150,0,0,0.2)_0%,transparent_100%)] animate-pulse mix-blend-multiply"></div>}
-      {showDefaultAura && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_150px_rgba(255,255,255,0.08)_inset] animate-pulse"></div>}
+      {showOuro && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(255,215,0,0.12)_0%,transparent_100%)] animate-pulse mix-blend-screen shadow-[0_0_100px_rgba(255,215,0,0.05)_inset]"></div>}
+      {showRaio && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(circle_at_center,rgba(0,255,255,0.04)_0%,transparent_100%)] animate-[pulse_0.4s_infinite] mix-blend-screen"></div>}
+      {showSangue && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(180,0,0,0.15)_0%,transparent_100%)] animate-pulse"></div>}
+
+      {showSakura && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
+          {particleStyles.map((p, i) => (
+            <div key={i} className="sakura-leaf" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: p.size, height: `${parseFloat(p.size) * 0.65}px` }} />
+          ))}
+        </div>
+      )}
+
+      {showFogo && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden bg-[radial-gradient(ellipse_at_bottom,rgba(255,60,0,0.15)_0%,transparent_100%)] mix-blend-screen">
+          {particleStyles.map((p, i) => (
+            <div key={i} className="fire-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: p.size, height: p.size }} />
+          ))}
+        </div>
+      )}
+
+      {showGelo && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
+          {particleStyles.map((p, i) => (
+            <div key={i} className="snow-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 0.5}px`, height: `${parseFloat(p.size) * 0.5}px` }} />
+          ))}
+        </div>
+      )}
+
+      {showParticulas && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
+          {particleStyles.map((p, i) => (
+            <div key={i} className="star-particle" style={{ left: p.left, top: `${Math.random() * 100}%`, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 0.4}px`, height: `${parseFloat(p.size) * 0.4}px` }} />
+          ))}
+        </div>
+      )}
+
+      {showVeneno && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
+          {particleStyles.map((p, i) => (
+            <div key={i} className="poison-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 1.5}px`, height: `${parseFloat(p.size) * 1.5}px` }} />
+          ))}
+        </div>
+      )}
 
       <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-10 scale-95 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : toast.type === 'level_up' ? 'bg-[#1A1005]/95 border-[#FF8C00] text-[#FFB000]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
         {toast.type === 'error' ? <ShieldAlert size={20} /> : toast.type === 'level_up' ? <Sparkles size={20} className="animate-pulse" /> : <Zap size={20} />}
