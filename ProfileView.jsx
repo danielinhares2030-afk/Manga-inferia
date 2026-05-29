@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar, Palette, Package, Coins, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar, Package, Coins, ChevronRight } from 'lucide-react';
 import { doc, setDoc, collection, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { auth, db } from './firebase'; 
@@ -83,13 +83,11 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       if (item.type === 'tema') {
         await setDoc(doc(db, 'usuarios', user.uid), { tema: item.name }, { merge: true });
         localStorage.setItem('mi_theme', item.name);
-      } else if (item.type === 'efeito') {
-        await setDoc(doc(db, 'usuarios', user.uid), { efeitoVisual: item.name }, { merge: true });
-        localStorage.setItem('mi_effect', item.name);
       } else {
         const equipamentosAtualizados = { ...eq };
         equipamentosAtualizados[item.type] = item;
         await setDoc(doc(db, 'usuarios', user.uid), { equipamentos: equipamentosAtualizados }, { merge: true });
+        if (item.type === 'efeito') localStorage.setItem('mi_effect', item.name);
       }
       if (window.mostrarAviso) window.mostrarAviso(`${item.name} Equipado!`);
     } catch(err) {}
@@ -101,13 +99,11 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       if (item.type === 'tema') {
         await setDoc(doc(db, 'usuarios', user.uid), { tema: 'Inferia (Vermelho)' }, { merge: true });
         localStorage.setItem('mi_theme', 'Inferia (Vermelho)');
-      } else if (item.type === 'efeito') {
-        await setDoc(doc(db, 'usuarios', user.uid), { efeitoVisual: 'Nenhum' }, { merge: true });
-        localStorage.setItem('mi_effect', 'Nenhum');
       } else {
         const equipamentosAtualizados = { ...eq };
         delete equipamentosAtualizados[item.type];
         await setDoc(doc(db, 'usuarios', user.uid), { equipamentos: equipamentosAtualizados }, { merge: true });
+        if (item.type === 'efeito') localStorage.setItem('mi_effect', 'Nenhum');
       }
     } catch(err) {}
   };
@@ -300,7 +296,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
                 const rar = RARITIES[item?.rarity] || RARITIES['common'];
                 let isEquipped = false;
                 if (item.type === 'tema') isEquipped = safePerfil.tema === item.name;
-                else if (item.type === 'efeito') isEquipped = safePerfil.efeitoVisual === item.name;
                 else isEquipped = eq[item?.type]?.id === item?.id;
                 
                 return (
@@ -323,7 +318,7 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
       )}
 
       {editProfileModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 no-hue animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 no-hue animate-in fade-in duration-200">
           <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
             <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
               <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2 leading-none mt-1">EDITAR PERFIL</h3>
