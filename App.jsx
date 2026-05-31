@@ -37,7 +37,7 @@ const CustomLoader = () => (
     <div className="relative w-16 h-16 flex items-center justify-center">
       <div className="absolute inset-0 border-t-2 border-[#CC0000] rounded-full animate-spin"></div>
       <div className="absolute inset-2 border-b-2 border-[#FF3333] rounded-full animate-spin reverse"></div>
-      <Sparkles className="text-[#CC0000] animate-pulse" size={20} />
+      <Sparkles className="text-[#CC0000]" size={20} />
     </div>
   </div>
 );
@@ -181,13 +181,12 @@ const AppContent = () => {
 
   const themeHue = getHueFromName(perfil.tema);
 
-  // Gerador de partículas super otimizado e com durações longas
   const particleStyles = useMemo(() => {
     return Array.from({ length: 30 }).map(() => ({
       left: `${Math.random() * 100}%`,
       top: `${Math.random() * 100}%`,
-      animationDuration: `${Math.random() * 10 + 12}s`, // Suave, 12 a 22 segundos
-      animationDelay: `${Math.random() * -20}s`, // Começa espalhado
+      animationDuration: `${Math.random() * 10 + 12}s`, 
+      animationDelay: `${Math.random() * -20}s`, 
       size: `${Math.random() * 6 + 4}px`,
       drift: `${Math.random() * 100 - 50}px`
     }));
@@ -227,13 +226,7 @@ const AppContent = () => {
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img:not(.no-hue-effect), .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
 
-    /* Efeitos de Animação Ousados e Suaves (sem piscar rápido) */
-    @keyframes smoothBreathe {
-      0% { opacity: 0.3; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.02); }
-      100% { opacity: 0.3; transform: scale(1); }
-    }
-
+    /* Efeito suave de descida contínua para a Matrix */
     @keyframes matrixScroll {
       0% { background-position: 0% -100vh; }
       100% { background-position: 0% 100vh; }
@@ -309,49 +302,45 @@ const AppContent = () => {
         <img src={effectUrl} alt="Efeito Equipado" className="fixed inset-0 w-full h-full object-cover pointer-events-none z-[9998] opacity-60 no-hue no-hue-effect mix-blend-screen" />
       )}
 
-      {/* Camadas Estáticas e Auras (Sem piscar rápido, totalmente suaves) */}
+      {/* Auras Estáticas - Nada de piscar. Apenas Atmosferas Ricas e Suaves */}
       {showCRT && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(180deg,transparent_0%,rgba(0,255,150,0.08)_50%,transparent_100%)] bg-[length:100%_200vh] animate-[matrixScroll_15s_linear_infinite] mix-blend-screen opacity-70"></div>}
       
-      {showVinheta && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_200px_rgba(15,0,30,0.95)_inset] animate-[smoothBreathe_10s_ease-in-out_infinite]"></div>}
+      {showVinheta && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_200px_rgba(15,0,30,0.95)_inset]"></div>}
       
-      {showOuro && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_center,rgba(255,215,0,0.06)_0%,transparent_80%)] mix-blend-screen shadow-[0_0_120px_rgba(255,215,0,0.1)_inset] animate-[smoothBreathe_8s_ease-in-out_infinite]"></div>}
+      {showOuro && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(255,215,0,0.15)_0%,transparent_80%)] mix-blend-screen shadow-[0_0_120px_rgba(255,215,0,0.1)_inset]"></div>}
       
-      {showRaio && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top_left,rgba(0,150,255,0.1)_0%,transparent_60%),radial-gradient(ellipse_at_bottom_right,rgba(100,0,255,0.1)_0%,transparent_60%)] mix-blend-screen shadow-[0_0_100px_rgba(0,150,255,0.15)_inset] animate-[smoothBreathe_9s_ease-in-out_infinite]"></div>}
+      {showRaio && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(135deg,rgba(0,255,255,0.05)_0%,rgba(100,0,255,0.05)_100%)] mix-blend-screen shadow-[0_0_120px_rgba(0,150,255,0.15)_inset]"></div>}
       
-      {showSangue && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(180deg,rgba(150,0,0,0.1)_0%,transparent_100%)] shadow-[0_0_150px_rgba(120,0,0,0.25)_inset] animate-[smoothBreathe_8s_ease-in-out_infinite]"></div>}
+      {showSangue && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(180deg,rgba(180,0,0,0.15)_0%,transparent_100%)] shadow-[0_0_150px_rgba(120,0,0,0.3)_inset]"></div>}
 
-      {/* Partículas Complexas */}
+      {showDefaultAura && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_150px_rgba(255,255,255,0.05)_inset]"></div>}
+
+      {/* Partículas Lentas */}
       {showSakura && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
           {particleStyles.map((p, i) => <div key={i} className="sakura-leaf" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: p.size, height: `${parseFloat(p.size) * 0.65}px`, '--drift': p.drift }} />)}
         </div>
       )}
-      
       {showFogo && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden bg-[radial-gradient(ellipse_at_bottom,rgba(70,0,150,0.08)_0%,transparent_100%)] mix-blend-screen">
           {particleStyles.map((p, i) => <div key={i} className="fire-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: p.size, height: p.size, '--drift': p.drift }} />)}
         </div>
       )}
-      
       {showGelo && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
           {particleStyles.map((p, i) => <div key={i} className="snow-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 0.6}px`, height: `${parseFloat(p.size) * 0.6}px`, '--drift': p.drift }} />)}
         </div>
       )}
-      
       {showParticulas && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
           {particleStyles.map((p, i) => <div key={i} className="star-particle" style={{ left: p.left, top: p.top, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 0.5}px`, height: `${parseFloat(p.size) * 0.5}px` }} />)}
         </div>
       )}
-      
       {showVeneno && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
           {particleStyles.map((p, i) => <div key={i} className="poison-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 1.8}px`, height: `${parseFloat(p.size) * 1.8}px`, '--drift': p.drift }} />)}
         </div>
       )}
-      
-      {showDefaultAura && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_150px_rgba(255,255,255,0.05)_inset] animate-[smoothBreathe_8s_ease-in-out_infinite]"></div>}
 
       <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
         <Zap size={20} />
