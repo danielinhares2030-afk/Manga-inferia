@@ -11,15 +11,27 @@ const RARITIES = {
   mythical: { color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500', label: 'Mítico' }
 };
 
+// Os 10 Efeitos Lendários Codificados no App
+const HARDCODED_EFFECTS = [
+  { id: 'e_amat', type: 'efeito', rarity: 'mythical', name: 'Chamas Negras de Amaterasu' },
+  { id: 'e_sakura', type: 'efeito', rarity: 'epic', name: 'Pétalas de Sakura' },
+  { id: 'e_matrix', type: 'efeito', rarity: 'legendary', name: 'Chuva Neon Matrix' },
+  { id: 'e_nevasca', type: 'efeito', rarity: 'rare', name: 'Nevasca Profunda' },
+  { id: 'e_temp', type: 'efeito', rarity: 'legendary', name: 'Tempestade de Raios' },
+  { id: 'e_aura', type: 'efeito', rarity: 'mythical', name: 'Aura de Energia Dourada' },
+  { id: 'e_cosmico', type: 'efeito', rarity: 'epic', name: 'Abismo Cósmico' },
+  { id: 'e_miasma', type: 'efeito', rarity: 'rare', name: 'Miasma Tóxico' },
+  { id: 'e_cristal', type: 'efeito', rarity: 'epic', name: 'Fragmentos de Cristal' },
+  { id: 'e_sangue', type: 'efeito', rarity: 'legendary', name: 'Chuva de Sangue' }
+];
+
 const FALLBACK_POOL = [
   { id: 't_roxo', type: 'tema', rarity: 'rare', name: 'Abismo (Roxo)' },
   { id: 't_azul', type: 'tema', rarity: 'rare', name: 'Gelo (Azul)' },
   { id: 't_verde', type: 'tema', rarity: 'epic', name: 'Tóxico (Verde)' },
-  { id: 'e_crt', type: 'efeito', rarity: 'epic', name: 'TV Antiga (CRT)' },
-  { id: 'e_vinh', type: 'efeito', rarity: 'legendary', name: 'Vinheta Sombria' },
-  { id: 'e_part', type: 'efeito', rarity: 'mythical', name: 'Partículas Siderais' },
   { id: 'm_ouro', type: 'moldura', rarity: 'legendary', name: 'Aura Dourada', color: '#FFD700' },
-  { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
+  { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' },
+  ...HARDCODED_EFFECTS
 ];
 
 const CaixaView = ({ user, perfil = {} }) => {
@@ -34,7 +46,9 @@ const CaixaView = ({ user, perfil = {} }) => {
       try {
         const snap = await getDocs(collection(db, 'reliquias_pool'));
         if (!snap.empty) {
-          setItemsPool(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+          // Pega os itens do Firebase (removendo qualquer efeito velho bugado) e junta com os 10 efeitos novos
+          const fetchedItems = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(item => item.type !== 'efeito');
+          setItemsPool([...fetchedItems, ...HARDCODED_EFFECTS]);
         } else {
           setItemsPool(FALLBACK_POOL);
         }
