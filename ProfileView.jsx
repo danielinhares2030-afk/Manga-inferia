@@ -87,7 +87,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         const equipamentosAtualizados = { ...eq };
         equipamentosAtualizados[item.type] = item;
         await setDoc(doc(db, 'usuarios', user.uid), { equipamentos: equipamentosAtualizados }, { merge: true });
-        if (item.type === 'efeito') localStorage.setItem('mi_effect', item.name);
       }
       if (window.mostrarAviso) window.mostrarAviso(`${item.name} Equipado!`);
     } catch(err) {}
@@ -103,7 +102,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
         const equipamentosAtualizados = { ...eq };
         delete equipamentosAtualizados[item.type];
         await setDoc(doc(db, 'usuarios', user.uid), { equipamentos: equipamentosAtualizados }, { merge: true });
-        if (item.type === 'efeito') localStorage.setItem('mi_effect', 'Nenhum');
       }
     } catch(err) {}
   };
