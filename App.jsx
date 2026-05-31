@@ -169,7 +169,6 @@ const AppContent = () => {
 
   const themeHue = getHueFromName(perfil.tema);
 
-  // Geração de 35 partículas dinâmicas para os 10 efeitos
   const particleStyles = useMemo(() => {
     return Array.from({ length: 35 }).map(() => ({
       left: `${Math.random() * 100}%`,
@@ -181,18 +180,33 @@ const AppContent = () => {
     }));
   }, []);
 
-  const effectStr = (perfil.efeitoVisual || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const equippedEffect = perfil.equipamentos?.efeito || null;
+  const effectCSS = equippedEffect?.css || equippedEffect?.codigoCss || '';
+  const effectAnim = equippedEffect?.animacao || equippedEffect?.keyframes || '';
+  const effectHTML = equippedEffect?.html || equippedEffect?.codigoHtml || '';
+  const effectUrl = equippedEffect?.image || null;
+  const hasCustomAICode = !!(effectCSS || effectAnim || effectHTML);
+
+  const effectNameToUse = equippedEffect?.name || perfil.efeitoVisual || '';
+  const effectStr = (!hasCustomAICode && !effectUrl && effectNameToUse) 
+    ? effectNameToUse.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
+    : '';
 
   const showAmaterasu = /amaterasu|chamas negras/.test(effectStr);
-  const showSakura = /sakura|petalas/.test(effectStr);
+  const showSakura = /sakura|petala/.test(effectStr);
   const showMatrix = /matrix|chuva neon/.test(effectStr);
   const showNevasca = /nevasca|profunda/.test(effectStr);
-  const showTempestade = /tempestade|raios/.test(effectStr);
+  const showTempestade = /tempestade|raio/.test(effectStr);
   const showAura = /aura|dourada/.test(effectStr);
   const showCosmico = /abismo cosmico|cosmico/.test(effectStr);
   const showMiasma = /miasma|toxico/.test(effectStr);
-  const showCristal = /cristal|fragmentos/.test(effectStr);
+  const showCristal = /cristal|fragmento/.test(effectStr);
   const showSangue = /sangue|chuva de sangue/.test(effectStr);
+  
+  const showCRT = /crt|tv|retro|glitch|pixel|cyber/.test(effectStr);
+  const showVinheta = /vinheta|sombra|trevas|escuro|dark|abismo|void|shadow/.test(effectStr);
+
+  const showDefaultAura = equippedEffect && !hasCustomAICode && !effectUrl && !effectHTML && !showAmaterasu && !showSakura && !showMatrix && !showNevasca && !showTempestade && !showAura && !showCosmico && !showMiasma && !showCristal && !showSangue && !showCRT && !showVinheta;
 
   const globais = `
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
@@ -204,35 +218,20 @@ const AppContent = () => {
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img:not(.no-hue-effect), .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
 
-    /* 1. Amaterasu */
     @keyframes flameup { 0% { transform: translateY(110vh) scale(1) rotate(0deg); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-10vh) scale(0.5) rotate(45deg); opacity: 0; } }
     .amat-flame { position: fixed; background: linear-gradient(to top, #1a0033, #000000); border-radius: 50% 0 50% 50%; box-shadow: 0 0 15px #4b0082; animation: flameup ease-in infinite; pointer-events: none; z-index: 9998; }
-
-    /* 2. Sakura */
     @keyframes sakurafall { 0% { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(105vh) translateX(80px) rotate(540deg); opacity: 0; } }
     .sakura-leaf { position: fixed; background: linear-gradient(135deg, #ffb7c5, #ffa0b5); border-radius: 100% 0 100% 100%; pointer-events: none; z-index: 9998; animation: sakurafall linear infinite; box-shadow: 0 0 5px rgba(255,183,197,0.5); }
-
-    /* 3. Matrix */
     @keyframes matrixfall { 0% { transform: translateY(-10vh); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(110vh); opacity: 0; } }
     .matrix-drop { position: fixed; width: 2px; height: 40px; background: linear-gradient(transparent, #0f0, #fff); animation: matrixfall linear infinite; pointer-events: none; z-index: 9998; box-shadow: 0 0 8px #0f0; }
-
-    /* 4. Nevasca */
     @keyframes snowfall { 0% { transform: translateY(-20px) translateX(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(105vh) translateX(30px); opacity: 0; } }
     .snow-flake { position: fixed; background: #fff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: snowfall linear infinite; box-shadow: 0 0 6px #fff; }
-
-    /* 5. Cristal */
     @keyframes cristalfloat { 0% { transform: translateY(105vh) rotate(0deg); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; } }
     .cristal-shard { position: fixed; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 12px solid rgba(0, 255, 255, 0.8); animation: cristalfloat linear infinite; pointer-events: none; z-index: 9998; filter: drop-shadow(0 0 6px cyan); }
-
-    /* 6. Sangue */
     @keyframes bloodfall { 0% { transform: translateY(-10vh); opacity: 0; } 5% { opacity: 1; } 100% { transform: translateY(110vh); opacity: 0; } }
     .blood-drop { position: fixed; width: 3px; border-radius: 50%; background: #8a0303; animation: bloodfall linear infinite; pointer-events: none; z-index: 9998; box-shadow: 0 0 4px #ff0000; }
-
-    /* 7. Miasma */
     @keyframes miasmarise { 0% { transform: translateY(105vh) scale(0.8); opacity: 0; filter: blur(3px); } 30% { opacity: 0.5; } 100% { transform: translateY(-10vh) scale(2); opacity: 0; filter: blur(8px); } }
     .poison-cloud { position: fixed; background: radial-gradient(circle, #32cd32 0%, transparent 70%); border-radius: 50%; pointer-events: none; z-index: 9998; animation: miasmarise ease-out infinite; mix-blend-screen; }
-
-    /* 8. Cósmico */
     @keyframes starfloat { 0% { transform: scale(0) translateY(0); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: scale(1.5) translateY(-50px); opacity: 0; } }
     .cosmic-star { position: fixed; background: #fff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: starfloat ease-in-out infinite; box-shadow: 0 0 8px #fff, 0 0 15px #a855f7; }
   `;
@@ -242,6 +241,25 @@ const AppContent = () => {
   return (
     <React.Fragment>
       <style dangerouslySetInnerHTML={{ __html: globais }} />
+
+      {hasCustomAICode && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          .ia-custom-effect-layer { ${effectCSS} }
+          ${effectAnim}
+        `}} />
+      )}
+      
+      {hasCustomAICode && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] ia-custom-effect-layer opacity-60 no-hue mix-blend-screen"></div>
+      )}
+
+      {effectHTML && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] no-hue" dangerouslySetInnerHTML={{ __html: effectHTML }} />
+      )}
+
+      {effectUrl && !effectHTML && (
+        <img src={effectUrl} alt="Efeito Equipado" className="fixed inset-0 w-full h-full object-cover pointer-events-none z-[9998] opacity-60 no-hue no-hue-effect mix-blend-screen" />
+      )}
 
       {/* RENDERIZAÇÃO DOS 10 EFEITOS ESPECIAIS */}
       {showAmaterasu && (
@@ -313,6 +331,11 @@ const AppContent = () => {
         </div>
       )}
 
+      {/* FALLBACKS ANTIGOS */}
+      {showCRT && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-40 mix-blend-screen"></div>}
+      {showVinheta && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_250px_rgba(0,0,0,0.95)_inset]"></div>}
+      {showDefaultAura && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_150px_rgba(255,255,255,0.08)_inset] animate-pulse"></div>}
+
       <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
         <Zap size={20} />
         <span className="text-sm tracking-wider font-nunito uppercase">{toast.msg}</span>
@@ -330,7 +353,6 @@ const AppContent = () => {
         </div>
       )}
 
-      {/* Cabeçalho sem o borrão de vidro fosco */}
       {!isFullScreenView && user && !authLoading && (
         <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] via-[#050508]/80 to-transparent pt-4 pb-8 px-4 text-[#F5F7FF] pointer-events-none">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
@@ -347,7 +369,6 @@ const AppContent = () => {
         </header>
       )}
 
-      {/* Conteúdo Principal */}
       <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white">
         {authLoading ? (
           <CustomLoader />
@@ -378,7 +399,6 @@ const AppContent = () => {
         </div>
       )}
 
-      {/* Menu Inferior */}
       {user && !isFullScreenView && !authLoading && (
         <div style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed bottom-0 left-0 w-full z-[9999] px-2 pb-4 pt-2 pointer-events-none text-[#F5F7FF]">
           <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent z-0"></div>
