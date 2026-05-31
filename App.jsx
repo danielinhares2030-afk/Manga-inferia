@@ -181,30 +181,6 @@ const AppContent = () => {
 
   const themeHue = getHueFromName(perfil.tema);
 
-  const equippedEffect = perfil.equipamentos?.efeito || null;
-  const effectCSS = equippedEffect?.css || equippedEffect?.codigoCss || '';
-  const effectAnim = equippedEffect?.animacao || equippedEffect?.keyframes || '';
-  const effectHTML = equippedEffect?.html || equippedEffect?.codigoHtml || '';
-  const effectUrl = equippedEffect?.image || null;
-  const hasCustomAICode = !!(effectCSS || effectAnim || effectHTML);
-
-  const effectNameToUse = equippedEffect?.name || perfil.efeitoVisual || '';
-  const effectStr = (!hasCustomAICode && !effectUrl && effectNameToUse) 
-    ? effectNameToUse.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
-    : '';
-
-  // Verificações para as Novas Texturas Estáticas
-  const showKatana = /katana|corte|espada|slash/.test(effectStr);
-  const showSeigaiha = /seigaiha|onda|mar|jap/.test(effectStr);
-  const showRunas = /runa|circulo|magia|array/.test(effectStr);
-  const showFibra = /fibra|carbono|armadura/.test(effectStr);
-  const showEscamas = /escama|dragao|reptil/.test(effectStr);
-  const showMosaico = /mosaico|vidro|quebrado/.test(effectStr);
-  const showHex = /colmeia|hex|ciber|grid/.test(effectStr);
-  const showLinhas = /velocidade|linha|speed/.test(effectStr);
-  const showDamasco = /damasco|aco|metal/.test(effectStr);
-  const showTopografia = /topografia|mapa|abissal/.test(effectStr);
-
   const globais = `
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
     body { overflow-x: hidden; background-color: #050508; }
@@ -214,75 +190,6 @@ const AppContent = () => {
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img:not(.no-hue-effect), .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
-
-    /* --- SISTEMA DE TEXTURAS 100% ESTÁTICAS (Zero processamento) --- */
-    
-    .effect-katana {
-      background:
-        linear-gradient(115deg, transparent 49%, rgba(255,255,255,0.15) 49.5%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.15) 50.5%, transparent 51%),
-        linear-gradient(65deg, transparent 20%, rgba(204,0,0,0.15) 20.2%, rgba(204,0,0,0.3) 20.5%, rgba(204,0,0,0.15) 20.8%, transparent 21%);
-    }
-
-    .effect-seigaiha {
-      background:
-        radial-gradient(circle at 100% 150%, transparent 20%, rgba(255,255,255,0.04) 21%, rgba(255,255,255,0.04) 34%, transparent 35%, transparent 44%, rgba(255,255,255,0.04) 45%, rgba(255,255,255,0.04) 54%, transparent 55%, transparent 64%, rgba(255,255,255,0.04) 65%, rgba(255,255,255,0.04) 74%, transparent 75%, transparent 84%, rgba(255,255,255,0.04) 85%, rgba(255,255,255,0.04) 90%, transparent 91%),
-        radial-gradient(circle at 0% 150%, transparent 20%, rgba(255,255,255,0.04) 21%, rgba(255,255,255,0.04) 34%, transparent 35%, transparent 44%, rgba(255,255,255,0.04) 45%, rgba(255,255,255,0.04) 54%, transparent 55%, transparent 64%, rgba(255,255,255,0.04) 65%, rgba(255,255,255,0.04) 74%, transparent 75%, transparent 84%, rgba(255,255,255,0.04) 85%, rgba(255,255,255,0.04) 90%, transparent 91%);
-      background-size: 60px 30px;
-    }
-
-    .effect-runas {
-      background:
-        repeating-radial-gradient(circle at center, transparent 0, transparent 60px, rgba(255,215,0,0.05) 60px, rgba(255,215,0,0.05) 62px),
-        repeating-linear-gradient(45deg, transparent, transparent 150px, rgba(255,215,0,0.03) 150px, rgba(255,215,0,0.03) 152px),
-        repeating-linear-gradient(-45deg, transparent, transparent 150px, rgba(255,215,0,0.03) 150px, rgba(255,215,0,0.03) 152px);
-    }
-
-    .effect-fibra {
-      background:
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%, rgba(255,255,255,0.02)),
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%, rgba(255,255,255,0.02));
-      background-position: 0 0, 10px 10px;
-      background-size: 20px 20px;
-    }
-
-    .effect-escamas {
-      background:
-        radial-gradient(circle at 50% 100%, rgba(0,255,136,0.06) 20%, transparent 21%),
-        radial-gradient(circle at 50% 0%, rgba(0,255,136,0.06) 20%, transparent 21%);
-      background-size: 40px 40px;
-      background-position: 0 0, 20px 20px;
-    }
-
-    .effect-mosaico {
-      background:
-        linear-gradient(30deg, rgba(122,60,255,0.04) 12%, transparent 12.5%, transparent 87%, rgba(122,60,255,0.04) 87.5%, rgba(122,60,255,0.04)),
-        linear-gradient(150deg, rgba(122,60,255,0.04) 12%, transparent 12.5%, transparent 87%, rgba(122,60,255,0.04) 87.5%, rgba(122,60,255,0.04)),
-        linear-gradient(60deg, rgba(122,60,255,0.02) 25%, transparent 25.5%, transparent 75%, rgba(122,60,255,0.02) 75%, rgba(122,60,255,0.02));
-      background-size: 60px 105px;
-      background-position: 0 0, 0 0, 30px 52.5px;
-    }
-
-    .effect-hex {
-      background:
-        linear-gradient(90deg, rgba(204,0,0,0.05) 1px, transparent 1px) 0 0,
-        linear-gradient(rgba(204,0,0,0.05) 1px, transparent 1px) 0 0;
-      background-size: 40px 40px;
-    }
-
-    .effect-linhas {
-      background: repeating-linear-gradient(90deg, transparent, transparent 10%, rgba(255,255,255,0.03) 10%, rgba(255,255,255,0.03) 10.5%, transparent 10.5%, transparent 20%, rgba(255,255,255,0.01) 20%, rgba(255,255,255,0.01) 21%);
-    }
-
-    .effect-damasco {
-      background: repeating-radial-gradient(circle at 0 0, transparent 0, rgba(255,255,255,0.03) 15px, transparent 30px);
-    }
-
-    .effect-topografia {
-      background:
-        radial-gradient(circle at 20% 30%, transparent 0, transparent 80px, rgba(0,150,255,0.04) 81px, transparent 82px),
-        radial-gradient(circle at 80% 70%, transparent 0, transparent 120px, rgba(0,150,255,0.04) 121px, transparent 122px),
-        radial-gradient(circle at 50% 50%, transparent 0, transparent 200px, rgba(0,150,255,0.02) 201px, transparent 202px);
-    }
   `;
 
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search' || activeTab === 'caixa';
@@ -290,37 +197,6 @@ const AppContent = () => {
   return (
     <React.Fragment>
       <style dangerouslySetInnerHTML={{ __html: globais }} />
-
-      {hasCustomAICode && (
-        <style dangerouslySetInnerHTML={{ __html: `
-          .ia-custom-effect-layer { ${effectCSS} }
-          ${effectAnim}
-        `}} />
-      )}
-      
-      {hasCustomAICode && (
-        <div className="fixed inset-0 pointer-events-none z-[9998] ia-custom-effect-layer opacity-60 no-hue mix-blend-screen"></div>
-      )}
-
-      {effectHTML && (
-        <div className="fixed inset-0 pointer-events-none z-[9998] no-hue" dangerouslySetInnerHTML={{ __html: effectHTML }} />
-      )}
-
-      {effectUrl && !effectHTML && (
-        <img src={effectUrl} alt="Efeito Equipado" className="fixed inset-0 w-full h-full object-cover pointer-events-none z-[9998] opacity-60 no-hue no-hue-effect mix-blend-screen" />
-      )}
-
-      {/* RENDERIZAÇÃO DAS NOVAS TEXTURAS ESTÁTICAS */}
-      {showKatana && <div className="fixed inset-0 pointer-events-none z-[9998] effect-katana mix-blend-screen opacity-100"></div>}
-      {showSeigaiha && <div className="fixed inset-0 pointer-events-none z-[9998] effect-seigaiha mix-blend-screen opacity-100"></div>}
-      {showRunas && <div className="fixed inset-0 pointer-events-none z-[9998] effect-runas mix-blend-screen opacity-100"></div>}
-      {showFibra && <div className="fixed inset-0 pointer-events-none z-[9998] effect-fibra opacity-100 mix-blend-screen"></div>}
-      {showEscamas && <div className="fixed inset-0 pointer-events-none z-[9998] effect-escamas mix-blend-screen opacity-100"></div>}
-      {showMosaico && <div className="fixed inset-0 pointer-events-none z-[9998] effect-mosaico mix-blend-screen opacity-100"></div>}
-      {showHex && <div className="fixed inset-0 pointer-events-none z-[9998] effect-hex mix-blend-screen opacity-100"></div>}
-      {showLinhas && <div className="fixed inset-0 pointer-events-none z-[9998] effect-linhas mix-blend-screen opacity-100"></div>}
-      {showDamasco && <div className="fixed inset-0 pointer-events-none z-[9998] effect-damasco mix-blend-screen opacity-100"></div>}
-      {showTopografia && <div className="fixed inset-0 pointer-events-none z-[9998] effect-topografia mix-blend-screen opacity-100"></div>}
 
       <div style={{ '--theme-hue': themeHue }} className={`theme-wrapper fixed top-12 left-1/2 -translate-x-1/2 z-[99999] flex items-center gap-3 px-6 py-3 rounded-2xl border font-bold shadow-[0_0_40px_rgba(0,0,0,0.8)] transition-all duration-500 w-max max-w-[90vw] backdrop-blur-xl no-hue ${toast.msg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 pointer-events-none'} ${toast.type === 'error' ? 'bg-[#1A0505]/95 border-[#CC0000] text-[#FF3333]' : 'bg-[#051A0A]/95 border-[#00CC66]/50 text-[#00FF88]'}`}>
         <Zap size={20} />
