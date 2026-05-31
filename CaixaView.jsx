@@ -11,18 +11,18 @@ const RARITIES = {
   mythical: { color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500', label: 'Mítico' }
 };
 
-// Os 10 Efeitos Lendários Codificados no App
+// Nova Linha de Efeitos Estáticos Premium (Texturas e Padrões)
 const HARDCODED_EFFECTS = [
-  { id: 'e_amat', type: 'efeito', rarity: 'mythical', name: 'Chamas Negras de Amaterasu' },
-  { id: 'e_sakura', type: 'efeito', rarity: 'epic', name: 'Pétalas de Sakura' },
-  { id: 'e_matrix', type: 'efeito', rarity: 'legendary', name: 'Chuva Neon Matrix' },
-  { id: 'e_nevasca', type: 'efeito', rarity: 'rare', name: 'Nevasca Profunda' },
-  { id: 'e_temp', type: 'efeito', rarity: 'legendary', name: 'Tempestade de Raios' },
-  { id: 'e_aura', type: 'efeito', rarity: 'mythical', name: 'Aura de Energia Dourada' },
-  { id: 'e_cosmico', type: 'efeito', rarity: 'epic', name: 'Abismo Cósmico' },
-  { id: 'e_miasma', type: 'efeito', rarity: 'rare', name: 'Miasma Tóxico' },
-  { id: 'e_cristal', type: 'efeito', rarity: 'epic', name: 'Fragmentos de Cristal' },
-  { id: 'e_sangue', type: 'efeito', rarity: 'legendary', name: 'Chuva de Sangue' }
+  { id: 'e_katana', type: 'efeito', rarity: 'epic', name: 'Cortes de Katana' },
+  { id: 'e_seigaiha', type: 'efeito', rarity: 'rare', name: 'Ondas de Seigaiha' },
+  { id: 'e_runas', type: 'efeito', rarity: 'legendary', name: 'Círculo Rúnico Oculto' },
+  { id: 'e_fibra', type: 'efeito', rarity: 'common', name: 'Armadura de Fibra' },
+  { id: 'e_escamas', type: 'efeito', rarity: 'epic', name: 'Escamas de Dragão' },
+  { id: 'e_mosaico', type: 'efeito', rarity: 'rare', name: 'Mosaico de Vidro' },
+  { id: 'e_hex', type: 'efeito', rarity: 'mythical', name: 'Colmeia Cibernética' },
+  { id: 'e_topografia', type: 'efeito', rarity: 'epic', name: 'Topografia Abissal' },
+  { id: 'e_damasco', type: 'efeito', rarity: 'legendary', name: 'Aço de Damasco' },
+  { id: 'e_linhas', type: 'efeito', rarity: 'common', name: 'Velocidade Máxima' }
 ];
 
 const FALLBACK_POOL = [
@@ -46,7 +46,6 @@ const CaixaView = ({ user, perfil = {} }) => {
       try {
         const snap = await getDocs(collection(db, 'reliquias_pool'));
         if (!snap.empty) {
-          // Pega os itens do Firebase (removendo qualquer efeito velho bugado) e junta com os 10 efeitos novos
           const fetchedItems = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(item => item.type !== 'efeito');
           setItemsPool([...fetchedItems, ...HARDCODED_EFFECTS]);
         } else {
