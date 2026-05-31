@@ -7,17 +7,20 @@ const HomeView = ({ carouselData = [], obrasDestaque = [], obrasAtualizadas = []
     return (
       <div className="flex items-center gap-1 bg-[#0A0505]/80 backdrop-blur border border-[#FFD700]/30 px-2 py-1 rounded">
         <Star size={12} className="text-[#FFD700] fill-[#FFD700]" />
-        <span className="text-white text-[10px] font-black">{Number(rating).toFixed(1)}</span>
+        <span className="text-white text-[10px] font-black">{Number(rating || 0).toFixed(1)}</span>
       </div>
     );
   };
 
-  // Função à prova de balas para ler os capítulos, mesmo se o Firebase enviar como Objeto
   const getUltimosCapitulos = (caps) => {
-    if (!caps) return [];
-    if (Array.isArray(caps)) return caps.slice(0, 2);
-    if (typeof caps === 'object') return Object.values(caps).slice(0, 2);
-    return [];
+    try {
+      if (!caps) return [];
+      if (Array.isArray(caps)) return caps.slice(0, 2);
+      if (typeof caps === 'object') return Object.values(caps).slice(0, 2);
+      return [];
+    } catch (e) {
+      return [];
+    }
   };
 
   return (
@@ -66,7 +69,7 @@ const HomeView = ({ carouselData = [], obrasDestaque = [], obrasAtualizadas = []
           <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4 snap-x">
             {obrasDestaque.map(obra => (
               <div key={obra.id} onClick={() => onMangaClick(obra.id)} className="min-w-[140px] md:min-w-[160px] snap-start relative rounded-xl overflow-hidden cursor-pointer group shadow-lg">
-                <div className="absolute top-2 left-2 z-10">{renderStars(obra.rating || 0)}</div>
+                <div className="absolute top-2 left-2 z-10">{renderStars(obra.rating)}</div>
                 <button onClick={(e) => { e.stopPropagation(); setSaveModal({ isOpen: true, obraId: obra.id }); }} className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-[#0A0505]/80 backdrop-blur border border-[#2A0A0A] flex items-center justify-center text-white hover:border-[#CC0000] transition-colors">
                   <Bookmark size={14} />
                 </button>
@@ -114,9 +117,9 @@ const HomeView = ({ carouselData = [], obrasDestaque = [], obrasAtualizadas = []
                     <h4 className="text-white text-xs font-bold line-clamp-2 mb-3 drop-shadow-md min-h-[32px]">{obra.nome || obra.title}</h4>
                     
                     <div className="mt-auto space-y-1.5">
-                      {ultimosCapitulos.length > 0 ? ultimosCapitulos.map(cap => (
-                        <div key={cap.id || Math.random()} className="flex justify-between items-center bg-[#140505] border border-[#2A0A0A] p-2 rounded-lg group-hover:border-[#CC0000]/30 transition-colors">
-                          <span className="text-[11px] text-gray-200 font-bold">Cap. {cap.numero || cap.numeroCapitulo}</span>
+                      {ultimosCapitulos.length > 0 ? ultimosCapitulos.map((cap, i) => (
+                        <div key={i} className="flex justify-between items-center bg-[#140505] border border-[#2A0A0A] p-2 rounded-lg group-hover:border-[#CC0000]/30 transition-colors">
+                          <span className="text-[11px] text-gray-200 font-bold">Cap. {cap.numero || cap.numeroCapitulo || '?'}</span>
                           <span className="text-[9px] text-[#CC0000] font-black uppercase tracking-wider">{cap.data || 'Novo'}</span>
                         </div>
                       )) : (
