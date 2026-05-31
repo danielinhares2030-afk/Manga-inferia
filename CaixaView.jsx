@@ -11,27 +11,12 @@ const RARITIES = {
   mythical: { color: 'text-red-500', bg: 'bg-red-500/20', border: 'border-red-500', label: 'Mítico' }
 };
 
-// Nova Linha de Efeitos Estáticos Premium (Texturas e Padrões)
-const HARDCODED_EFFECTS = [
-  { id: 'e_katana', type: 'efeito', rarity: 'epic', name: 'Cortes de Katana' },
-  { id: 'e_seigaiha', type: 'efeito', rarity: 'rare', name: 'Ondas de Seigaiha' },
-  { id: 'e_runas', type: 'efeito', rarity: 'legendary', name: 'Círculo Rúnico Oculto' },
-  { id: 'e_fibra', type: 'efeito', rarity: 'common', name: 'Armadura de Fibra' },
-  { id: 'e_escamas', type: 'efeito', rarity: 'epic', name: 'Escamas de Dragão' },
-  { id: 'e_mosaico', type: 'efeito', rarity: 'rare', name: 'Mosaico de Vidro' },
-  { id: 'e_hex', type: 'efeito', rarity: 'mythical', name: 'Colmeia Cibernética' },
-  { id: 'e_topografia', type: 'efeito', rarity: 'epic', name: 'Topografia Abissal' },
-  { id: 'e_damasco', type: 'efeito', rarity: 'legendary', name: 'Aço de Damasco' },
-  { id: 'e_linhas', type: 'efeito', rarity: 'common', name: 'Velocidade Máxima' }
-];
-
 const FALLBACK_POOL = [
   { id: 't_roxo', type: 'tema', rarity: 'rare', name: 'Abismo (Roxo)' },
   { id: 't_azul', type: 'tema', rarity: 'rare', name: 'Gelo (Azul)' },
   { id: 't_verde', type: 'tema', rarity: 'epic', name: 'Tóxico (Verde)' },
   { id: 'm_ouro', type: 'moldura', rarity: 'legendary', name: 'Aura Dourada', color: '#FFD700' },
-  { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' },
-  ...HARDCODED_EFFECTS
+  { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
 ];
 
 const CaixaView = ({ user, perfil = {} }) => {
@@ -46,8 +31,9 @@ const CaixaView = ({ user, perfil = {} }) => {
       try {
         const snap = await getDocs(collection(db, 'reliquias_pool'));
         if (!snap.empty) {
+          // Filtramos completamente qualquer item do tipo 'efeito' que venha do banco
           const fetchedItems = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(item => item.type !== 'efeito');
-          setItemsPool([...fetchedItems, ...HARDCODED_EFFECTS]);
+          setItemsPool(fetchedItems);
         } else {
           setItemsPool(FALLBACK_POOL);
         }
