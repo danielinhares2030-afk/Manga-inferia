@@ -20,14 +20,14 @@ const getLocalTheme = () => localStorage.getItem('mi_theme') || 'Inferia (Vermel
 
 const getHueFromName = (name) => {
   if (!name) return '0deg';
-  const n = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const n = String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (n.includes('vermelho') || n.includes('inferia') || n.includes('sangue')) return '0deg';
   if (n.includes('roxo') || n.includes('abismo') || n.includes('void') || n.includes('ametista')) return '260deg';
   if (n.includes('azul') || n.includes('gelo') || n.includes('frost') || n.includes('blue')) return '210deg';
   if (n.includes('verde') || n.includes('toxico') || n.includes('miasma') || n.includes('bioquimico')) return '120deg';
   if (n.includes('ouro') || n.includes('gold') || n.includes('zenith') || n.includes('amarelo')) return '45deg';
   let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < String(name).length; i++) hash = String(name).charCodeAt(i) + ((hash << 5) - hash);
   return Math.abs(hash % 360) + 'deg';
 };
 
@@ -188,8 +188,10 @@ const AppContent = () => {
   const hasCustomAICode = !!(effectCSS || effectAnim || effectHTML);
 
   const effectNameToUse = equippedEffect?.name || perfil.efeitoVisual || '';
+  
+  // Blindagem de segurança caso o nome seja um objeto estranho do banco
   const effectStr = (!hasCustomAICode && !effectUrl && effectNameToUse) 
-    ? effectNameToUse.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
+    ? String(effectNameToUse).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
     : '';
 
   const showAmaterasu = /amaterasu|chamas negras/.test(effectStr);
@@ -225,15 +227,11 @@ const AppContent = () => {
     @keyframes matrixfall { 0% { transform: translateY(-10vh); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(110vh); opacity: 0; } }
     .matrix-drop { position: fixed; width: 2px; height: 40px; background: linear-gradient(transparent, #0f0, #fff); animation: matrixfall linear infinite; pointer-events: none; z-index: 9998; box-shadow: 0 0 8px #0f0; }
     @keyframes snowfall { 0% { transform: translateY(-20px) translateX(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(105vh) translateX(30px); opacity: 0; } }
-    .snow-flake { position: fixed; background: #fff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: snowfall linear infinite; box-shadow: 0 0 6px #fff; }
-    @keyframes cristalfloat { 0% { transform: translateY(105vh) rotate(0deg); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; } }
-    .cristal-shard { position: fixed; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 12px solid rgba(0, 255, 255, 0.8); animation: cristalfloat linear infinite; pointer-events: none; z-index: 9998; filter: drop-shadow(0 0 6px cyan); }
-    @keyframes bloodfall { 0% { transform: translateY(-10vh); opacity: 0; } 5% { opacity: 1; } 100% { transform: translateY(110vh); opacity: 0; } }
-    .blood-drop { position: fixed; width: 3px; border-radius: 50%; background: #8a0303; animation: bloodfall linear infinite; pointer-events: none; z-index: 9998; box-shadow: 0 0 4px #ff0000; }
-    @keyframes miasmarise { 0% { transform: translateY(105vh) scale(0.8); opacity: 0; filter: blur(3px); } 30% { opacity: 0.5; } 100% { transform: translateY(-10vh) scale(2); opacity: 0; filter: blur(8px); } }
-    .poison-cloud { position: fixed; background: radial-gradient(circle, #32cd32 0%, transparent 70%); border-radius: 50%; pointer-events: none; z-index: 9998; animation: miasmarise ease-out infinite; mix-blend-screen; }
-    @keyframes starfloat { 0% { transform: scale(0) translateY(0); opacity: 0; } 50% { opacity: 0.8; } 100% { transform: scale(1.5) translateY(-50px); opacity: 0; } }
-    .cosmic-star { position: fixed; background: #fff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: starfloat ease-in-out infinite; box-shadow: 0 0 8px #fff, 0 0 15px #a855f7; }
+    .snow-flake { position: fixed; background: #ffffff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: snowfall linear infinite; box-shadow: 0 0 4px #ffffff; }
+    @keyframes starfloat { 0% { transform: scale(0); opacity: 0; } 50% { opacity: 0.6; } 100% { transform: scale(1.3); opacity: 0; } }
+    .star-particle { position: fixed; background: #ffffff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: starfloat ease-in-out infinite; box-shadow: 0 0 6px #ffffff; }
+    @keyframes miasmarise { 0% { transform: translateY(105vh) scale(0.8); opacity: 0; filter: blur(2px); } 20% { opacity: 0.4; } 80% { opacity: 0.4; } 100% { transform: translateY(-5vh) scale(1.5); opacity: 0; filter: blur(5px); } }
+    .poison-cloud { position: fixed; background: #32cd32; border-radius: 50%; pointer-events: none; z-index: 9998; animation: miasmarise ease-out infinite; }
   `;
 
   const isFullScreenView = activeTab === 'details' || activeTab === 'reader' || activeTab === 'search' || activeTab === 'caixa';
@@ -353,6 +351,7 @@ const AppContent = () => {
         </div>
       )}
 
+      {/* Cabeçalho sem o borrão de vidro fosco */}
       {!isFullScreenView && user && !authLoading && (
         <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] via-[#050508]/80 to-transparent pt-4 pb-8 px-4 text-[#F5F7FF] pointer-events-none">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
@@ -369,6 +368,7 @@ const AppContent = () => {
         </header>
       )}
 
+      {/* Conteúdo Principal */}
       <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white">
         {authLoading ? (
           <CustomLoader />
@@ -399,6 +399,7 @@ const AppContent = () => {
         </div>
       )}
 
+      {/* Menu Inferior */}
       {user && !isFullScreenView && !authLoading && (
         <div style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed bottom-0 left-0 w-full z-[9999] px-2 pb-4 pt-2 pointer-events-none text-[#F5F7FF]">
           <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/95 to-transparent z-0"></div>
