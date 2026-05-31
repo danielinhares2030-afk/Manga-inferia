@@ -208,7 +208,7 @@ const AppContent = () => {
   const showOuro = /ouro|gold|luz|celestial|sagrado|anjo|brilho|divino/.test(effectStr);
   const showRaio = /raio|trovao|eletrico|tempestade|choque|relampago/.test(effectStr);
   const showSangue = /sangue|blood|vampiro|carmim|sanguinario/.test(effectStr);
-  const showDefaultAura = equippedEffect && !hasCustomAICode && !effectUrl && !showCRT && !showVinheta && !showParticulas && !showFogo && !showSakura && !showGelo && !showVeneno && !showOuro && !showRaio && !showSangue;
+  const showDefaultAura = equippedEffect && !hasCustomAICode && !effectUrl && !effectHTML && !showCRT && !showVinheta && !showParticulas && !showFogo && !showSakura && !showGelo && !showVeneno && !showOuro && !showRaio && !showSangue;
 
   const globais = `
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
@@ -307,9 +307,9 @@ const AppContent = () => {
         </div>
       )}
 
-      {/* Cabeçalho */}
+      {/* Cabeçalho sem o borrão de vidro fosco */}
       {!isFullScreenView && user && !authLoading && (
-        <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508]/95 via-[#050508]/80 to-transparent pt-4 pb-6 px-4 text-[#F5F7FF] pointer-events-none backdrop-blur-sm">
+        <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] via-[#050508]/80 to-transparent pt-4 pb-8 px-4 text-[#F5F7FF] pointer-events-none">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
             <h1 className="font-anime text-base md:text-xl shadow-black flex gap-1">
               <span>MANGA</span><span className="text-[#CC0000]">INFERIA</span>
@@ -324,7 +324,7 @@ const AppContent = () => {
         </header>
       )}
 
-      {/* Conteúdo Principal (A prova de tela preta) */}
+      {/* Conteúdo Principal */}
       <div style={{ '--theme-hue': themeHue }} className="theme-wrapper min-h-screen flex flex-col bg-[#050508] text-[#F5F7FF] font-sans selection:bg-[#990000] selection:text-white">
         {authLoading ? (
           <CustomLoader />
