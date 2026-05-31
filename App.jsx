@@ -188,7 +188,9 @@ const AppContent = () => {
       animationDuration: `${Math.random() * 10 + 12}s`, 
       animationDelay: `${Math.random() * -20}s`, 
       size: `${Math.random() * 6 + 4}px`,
-      drift: `${Math.random() * 100 - 50}px`
+      drift: `${Math.random() * 100 - 50}px`,
+      fastDuration: `${Math.random() * 3 + 2}s`, // Para raios
+      mediumDuration: `${Math.random() * 5 + 6}s` // Para sangue
     }));
   }, []);
 
@@ -226,54 +228,56 @@ const AppContent = () => {
     .theme-wrapper { filter: hue-rotate(var(--theme-hue)); transition: filter 0.5s ease; }
     .theme-wrapper img:not(.no-hue-effect), .theme-wrapper video, .no-hue { filter: hue-rotate(calc(-1 * var(--theme-hue))); }
 
-    /* Efeito suave de descida contínua para a Matrix */
-    @keyframes matrixScroll {
-      0% { background-position: 0% -100vh; }
-      100% { background-position: 0% 100vh; }
+    @keyframes matrixScroll { 0% { background-position: 0% -100vh; } 100% { background-position: 0% 100vh; } }
+
+    /* Sangue - Gotas caindo fluidas */
+    @keyframes bloodfall {
+      0% { transform: translate3d(0, -10vh, 0) scaleY(1); opacity: 0; }
+      15% { opacity: 0.8; transform: translate3d(calc(var(--drift) * 0.2), 15vh, 0) scaleY(1.2); }
+      85% { opacity: 0.8; transform: translate3d(calc(var(--drift) * 0.8), 85vh, 0) scaleY(1.4); }
+      100% { transform: translate3d(var(--drift), 110vh, 0) scaleY(1.5); opacity: 0; }
+    }
+    .blood-particle { position: fixed; background: #990000; border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%; pointer-events: none; z-index: 9998; animation: bloodfall linear infinite; opacity: 0; box-shadow: 0 4px 6px rgba(153,0,0,0.5); }
+
+    /* Raio - Faíscas elétricas rápidas e ziguezague */
+    @keyframes sparkZap {
+      0% { transform: translate3d(0, -10vh, 0) scale(0); opacity: 0; }
+      10% { opacity: 1; transform: translate3d(calc(var(--drift) * 0.5), 10vh, 0) scale(1); }
+      50% { opacity: 1; transform: translate3d(calc(var(--drift) * -0.5), 50vh, 0) scale(1); }
+      90% { opacity: 1; transform: translate3d(calc(var(--drift) * 0.8), 90vh, 0) scale(1); }
+      100% { transform: translate3d(var(--drift), 110vh, 0) scale(0); opacity: 0; }
+    }
+    .spark-particle { position: fixed; background: #00ffff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: sparkZap linear infinite; opacity: 0; box-shadow: 0 0 10px #00ffff, 0 0 20px #0055ff; }
+
+    /* Clarão distante e suave de tempestade no fundo (sem cegar) */
+    @keyframes distantLightning {
+      0%, 93%, 96%, 100% { opacity: 0; }
+      94%, 97% { opacity: 0.15; }
     }
 
-    /* Pétalas de Sakura - Movimento leve */
-    @keyframes sakurafall {
-      0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; }
-      20% { opacity: 0.8; }
-      80% { opacity: 0.8; }
-      100% { transform: translate3d(var(--drift), 110vh, 0) rotate(360deg); opacity: 0; }
-    }
-    .sakura-leaf { position: fixed; background: linear-gradient(135deg, #ffb7c5, #ff8da1); border-radius: 100% 0 100% 100%; pointer-events: none; z-index: 9998; animation: sakurafall linear infinite; opacity: 0; box-shadow: 0 0 15px rgba(255,183,197,0.4); }
-
-    /* Chamas Negras (Amaterasu) - Brasas escuras flutuando pra cima */
-    @keyframes emberrise {
-      0% { transform: translate3d(0, 110vh, 0) scale(0.8); opacity: 0; }
-      20% { opacity: 0.7; }
-      80% { opacity: 0.7; }
+    /* Ouro - Partículas de tesouro flutuando para cima */
+    @keyframes goldfloat {
+      0% { transform: translate3d(0, 110vh, 0) scale(0.5); opacity: 0; }
+      30% { opacity: 0.8; }
+      70% { opacity: 0.8; }
       100% { transform: translate3d(var(--drift), -10vh, 0) scale(1.2); opacity: 0; }
     }
+    .gold-particle { position: fixed; background: radial-gradient(circle, #ffffff 0%, #ffd700 60%); border-radius: 50%; pointer-events: none; z-index: 9998; animation: goldfloat ease-in infinite; opacity: 0; box-shadow: 0 0 15px rgba(255,215,0,0.6); }
+
+    /* Sakura, Fogo, Gelo, etc (Mantidos os originais que já funcionam bem) */
+    @keyframes sakurafall { 0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; } 20% { opacity: 0.8; } 80% { opacity: 0.8; } 100% { transform: translate3d(var(--drift), 110vh, 0) rotate(360deg); opacity: 0; } }
+    .sakura-leaf { position: fixed; background: linear-gradient(135deg, #ffb7c5, #ff8da1); border-radius: 100% 0 100% 100%; pointer-events: none; z-index: 9998; animation: sakurafall linear infinite; opacity: 0; box-shadow: 0 0 15px rgba(255,183,197,0.4); }
+
+    @keyframes emberrise { 0% { transform: translate3d(0, 110vh, 0) scale(0.8); opacity: 0; } 20% { opacity: 0.7; } 80% { opacity: 0.7; } 100% { transform: translate3d(var(--drift), -10vh, 0) scale(1.2); opacity: 0; } }
     .fire-particle { position: fixed; background: linear-gradient(to top, #1a0033, #6600cc); border-radius: 50%; pointer-events: none; z-index: 9998; animation: emberrise linear infinite; box-shadow: 0 0 20px #6600cc; opacity: 0; filter: blur(1.5px); }
 
-    /* Neve / Cristal - Descida suave diagonal */
-    @keyframes snowfall {
-      0% { transform: translate3d(0, -10vh, 0); opacity: 0; }
-      20% { opacity: 0.6; }
-      80% { opacity: 0.6; }
-      100% { transform: translate3d(calc(var(--drift) * 2), 110vh, 0); opacity: 0; }
-    }
+    @keyframes snowfall { 0% { transform: translate3d(0, -10vh, 0); opacity: 0; } 20% { opacity: 0.6; } 80% { opacity: 0.6; } 100% { transform: translate3d(calc(var(--drift) * 2), 110vh, 0); opacity: 0; } }
     .snow-particle { position: fixed; background: #e0f7fa; border-radius: 50%; pointer-events: none; z-index: 9998; animation: snowfall linear infinite; box-shadow: 0 0 12px #e0f7fa; opacity: 0; filter: blur(0.5px); }
 
-    /* Partículas Siderais - Profundidade e distorção longa */
-    @keyframes starfloat {
-      0% { transform: scale(0.5) translateY(0); opacity: 0; }
-      50% { transform: scale(1.2) translateY(-30px); opacity: 0.6; }
-      100% { transform: scale(0.5) translateY(-60px); opacity: 0; }
-    }
+    @keyframes starfloat { 0% { transform: scale(0.5) translateY(0); opacity: 0; } 50% { transform: scale(1.2) translateY(-30px); opacity: 0.6; } 100% { transform: scale(0.5) translateY(-60px); opacity: 0; } }
     .star-particle { position: fixed; background: #ffffff; border-radius: 50%; pointer-events: none; z-index: 9998; animation: starfloat ease-in-out infinite; box-shadow: 0 0 15px #ffffff, 0 0 30px #ba68c8; opacity: 0; }
 
-    /* Miasma Tóxico - Bolhas de fumaça pesadas */
-    @keyframes miasmarise {
-      0% { transform: translate3d(0, 110vh, 0) scale(1); opacity: 0; filter: blur(4px); }
-      30% { opacity: 0.3; }
-      70% { opacity: 0.3; }
-      100% { transform: translate3d(var(--drift), -10vh, 0) scale(2); opacity: 0; filter: blur(10px); }
-    }
+    @keyframes miasmarise { 0% { transform: translate3d(0, 110vh, 0) scale(1); opacity: 0; filter: blur(4px); } 30% { opacity: 0.3; } 70% { opacity: 0.3; } 100% { transform: translate3d(var(--drift), -10vh, 0) scale(2); opacity: 0; filter: blur(10px); } }
     .poison-particle { position: fixed; background: #00ff66; border-radius: 50%; pointer-events: none; z-index: 9998; animation: miasmarise ease-in-out infinite; opacity: 0; mix-blend-screen: screen; }
   `;
 
@@ -302,40 +306,65 @@ const AppContent = () => {
         <img src={effectUrl} alt="Efeito Equipado" className="fixed inset-0 w-full h-full object-cover pointer-events-none z-[9998] opacity-60 no-hue no-hue-effect mix-blend-screen" />
       )}
 
-      {/* Auras Estáticas - Nada de piscar. Apenas Atmosferas Ricas e Suaves */}
+      {/* Camadas Estáticas de Clima (Sem piscar) */}
       {showCRT && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(180deg,transparent_0%,rgba(0,255,150,0.08)_50%,transparent_100%)] bg-[length:100%_200vh] animate-[matrixScroll_15s_linear_infinite] mix-blend-screen opacity-70"></div>}
-      
       {showVinheta && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_200px_rgba(15,0,30,0.95)_inset]"></div>}
       
-      {showOuro && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[radial-gradient(ellipse_at_top,rgba(255,215,0,0.15)_0%,transparent_80%)] mix-blend-screen shadow-[0_0_120px_rgba(255,215,0,0.1)_inset]"></div>}
-      
-      {showRaio && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(135deg,rgba(0,255,255,0.05)_0%,rgba(100,0,255,0.05)_100%)] mix-blend-screen shadow-[0_0_120px_rgba(0,150,255,0.15)_inset]"></div>}
-      
-      {showSangue && <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(180deg,rgba(180,0,0,0.15)_0%,transparent_100%)] shadow-[0_0_150px_rgba(120,0,0,0.3)_inset]"></div>}
+      {/* Raio - Clarão sutil + Névoa estática */}
+      {showRaio && (
+        <>
+          <div className="fixed inset-0 pointer-events-none z-[9998] bg-[linear-gradient(135deg,rgba(0,255,255,0.05)_0%,rgba(100,0,255,0.05)_100%)] mix-blend-screen shadow-[0_0_120px_rgba(0,150,255,0.15)_inset]"></div>
+          <div className="fixed inset-0 pointer-events-none z-[9998] bg-white mix-blend-screen animate-[distantLightning_12s_linear_infinite]"></div>
+        </>
+      )}
 
       {showDefaultAura && <div className="fixed inset-0 pointer-events-none z-[9998] shadow-[0_0_150px_rgba(255,255,255,0.05)_inset]"></div>}
 
-      {/* Partículas Lentas */}
+      {/* Sistemas de Partículas */}
+      
+      {showOuro && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
+          {particleStyles.map((p, i) => <div key={i} className="gold-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: p.size, height: p.size, '--drift': p.drift }} />)}
+        </div>
+      )}
+
+      {showSangue && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
+          <div className="absolute inset-0 shadow-[0_0_150px_rgba(120,0,0,0.2)_inset]"></div>
+          {particleStyles.map((p, i) => <div key={i} className="blood-particle" style={{ left: p.left, animationDuration: p.mediumDuration, animationDelay: p.animationDelay, width: p.size, height: `${parseFloat(p.size) * 1.5}px`, '--drift': p.drift }} />)}
+        </div>
+      )}
+
+      {showRaio && (
+        <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
+          {particleStyles.map((p, i) => <div key={i} className="spark-particle" style={{ left: p.left, animationDuration: p.fastDuration, animationDelay: p.animationDelay, width: '2px', height: '15px', '--drift': p.drift }} />)}
+        </div>
+      )}
+
       {showSakura && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
           {particleStyles.map((p, i) => <div key={i} className="sakura-leaf" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: p.size, height: `${parseFloat(p.size) * 0.65}px`, '--drift': p.drift }} />)}
         </div>
       )}
+
       {showFogo && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden bg-[radial-gradient(ellipse_at_bottom,rgba(70,0,150,0.08)_0%,transparent_100%)] mix-blend-screen">
           {particleStyles.map((p, i) => <div key={i} className="fire-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: p.size, height: p.size, '--drift': p.drift }} />)}
         </div>
       )}
+
       {showGelo && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
           {particleStyles.map((p, i) => <div key={i} className="snow-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 0.6}px`, height: `${parseFloat(p.size) * 0.6}px`, '--drift': p.drift }} />)}
         </div>
       )}
+
       {showParticulas && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
           {particleStyles.map((p, i) => <div key={i} className="star-particle" style={{ left: p.left, top: p.top, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 0.5}px`, height: `${parseFloat(p.size) * 0.5}px` }} />)}
         </div>
       )}
+
       {showVeneno && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden">
           {particleStyles.map((p, i) => <div key={i} className="poison-particle" style={{ left: p.left, animationDuration: p.animationDuration, animationDelay: p.animationDelay, width: `${parseFloat(p.size) * 1.8}px`, height: `${parseFloat(p.size) * 1.8}px`, '--drift': p.drift }} />)}
