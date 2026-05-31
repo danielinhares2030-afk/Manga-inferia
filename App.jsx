@@ -16,7 +16,11 @@ const LoginView = lazy(() => import('./LoginView'));
 const SearchView = lazy(() => import('./SearchView'));
 const CaixaView = lazy(() => import('./CaixaView')); 
 
-const getLocalTheme = () => localStorage.getItem('mi_theme') || 'Inferia (Vermelho)';
+// Blindagem de LocalStorage
+const getLocalTheme = () => {
+  try { return localStorage.getItem('mi_theme') || 'Inferia (Vermelho)'; } 
+  catch (e) { return 'Inferia (Vermelho)'; }
+};
 
 const getHueFromName = (name) => {
   if (!name) return '0deg';
@@ -80,12 +84,12 @@ const AppContent = () => {
       if (['home', 'catalog', 'search', 'biblioteca', 'ranking', 'profile', 'caixa'].includes(activeTab)) setLastMainTab(activeTab);
       setActiveTab(newTab);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      window.history.pushState({ tab: newTab }, '', window.location.href);
+      try { window.history.pushState({ tab: newTab }, '', window.location.href); } catch(e){}
     }
   };
 
   useEffect(() => {
-    window.history.replaceState({ tab: activeTab }, '', window.location.href);
+    try { window.history.replaceState({ tab: activeTab }, '', window.location.href); } catch(e){}
     const handlePopState = () => {
       if (activeTab === 'reader') setActiveTab('details');
       else if (activeTab === 'details' || activeTab === 'search') setActiveTab(lastMainTab);
@@ -122,23 +126,35 @@ const AppContent = () => {
   }, []);
 
   useEffect(() => {
-    const unsubObras = onSnapshot(collection(db, 'obras'), (snap) => setObras(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-    const unsubRanking = onSnapshot(query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(150)), (snap) => setTodosUsuarios(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-    if (!user) return;
-    const unsubBib = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca'), (snap) => {
-      const bibData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      bibData.sort((a, b) => new Date(b.ultimoLidoEm || 0) - new Date(a.ultimoLidoEm || 0));
-      setBiblioteca(bibData);
-    });
-    const unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        if (data.tema) localStorage.setItem('mi_theme', data.tema);
-        const xpAtual = data.xp || 0;
-        const nivelCalculado = Math.floor(xpAtual / 1000) + 1;
-        setPerfil(prev => ({ ...prev, ...data, nivel: nivelCalculado }));
+    let unsubObras = () => {};
+    let unsubRanking = () => {};
+    let unsubBib = () => {};
+    let unsubPerfil = () => {};
+
+    try {
+      unsubObras = onSnapshot(collection(db, 'obras'), (snap) => setObras(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+      unsubRanking = onSnapshot(query(collection(db, 'usuarios'), orderBy('xp', 'desc'), limit(150)), (snap) => setTodosUsuarios(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+      
+      if (user) {
+        unsubBib = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca'), (snap) => {
+          const bibData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          bibData.sort((a, b) => new Date(b.ultimoLidoEm || 0) - new Date(a.ultimoLidoEm || 0));
+          setBiblioteca(bibData);
+        });
+        unsubPerfil = onSnapshot(doc(db, 'usuarios', user.uid), (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            try { if (data.tema) localStorage.setItem('mi_theme', data.tema); } catch(e){}
+            const xpAtual = data.xp || 0;
+            const nivelCalculado = Math.floor(xpAtual / 1000) + 1;
+            setPerfil(prev => ({ ...prev, ...data, nivel: nivelCalculado }));
+          }
+        });
       }
-    });
+    } catch (err) {
+      console.error(err);
+    }
+    
     return () => { unsubObras(); unsubRanking(); unsubBib(); unsubPerfil(); };
   }, [user]);
 
@@ -162,9 +178,11 @@ const AppContent = () => {
   const handleResumeManga = async (obraId, capId) => {
     setSelectedObraId(obraId);
     if (!capId) { changeTab('details'); return; }
-    const snap = await getDoc(doc(db, 'capitulos', capId));
-    if (snap.exists()) { setSelectedCapitulo({ id: snap.id, ...snap.data() }); changeTab('reader'); }
-    else changeTab('details');
+    try {
+      const snap = await getDoc(doc(db, 'capitulos', capId));
+      if (snap.exists()) { setSelectedCapitulo({ id: snap.id, ...snap.data() }); changeTab('reader'); }
+      else changeTab('details');
+    } catch (e) { changeTab('details'); }
   };
 
   const themeHue = getHueFromName(perfil.tema);
@@ -181,16 +199,12 @@ const AppContent = () => {
   }, []);
 
   const equippedEffect = perfil.equipamentos?.efeito || null;
-  const effectCSS = equippedEffect?.css || equippedEffect?.codigoCss || '';
-  const effectAnim = equippedEffect?.animacao || equippedEffect?.keyframes || '';
-  const effectHTML = equippedEffect?.html || equippedEffect?.codigoHtml || '';
   const effectUrl = equippedEffect?.image || null;
-  const hasCustomAICode = !!(effectCSS || effectAnim || effectHTML);
 
   const effectNameToUse = equippedEffect?.name || perfil.efeitoVisual || '';
   
   // Blindagem de segurança caso o nome seja um objeto estranho do banco
-  const effectStr = (!hasCustomAICode && !effectUrl && effectNameToUse) 
+  const effectStr = (!effectUrl && effectNameToUse) 
     ? String(effectNameToUse).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') 
     : '';
 
@@ -208,7 +222,7 @@ const AppContent = () => {
   const showCRT = /crt|tv|retro|glitch|pixel|cyber/.test(effectStr);
   const showVinheta = /vinheta|sombra|trevas|escuro|dark|abismo|void|shadow/.test(effectStr);
 
-  const showDefaultAura = equippedEffect && !hasCustomAICode && !effectUrl && !effectHTML && !showAmaterasu && !showSakura && !showMatrix && !showNevasca && !showTempestade && !showAura && !showCosmico && !showMiasma && !showCristal && !showSangue && !showCRT && !showVinheta;
+  const showDefaultAura = equippedEffect && !effectUrl && !showAmaterasu && !showSakura && !showMatrix && !showNevasca && !showTempestade && !showAura && !showCosmico && !showMiasma && !showCristal && !showSangue && !showCRT && !showVinheta;
 
   const globais = `
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Shojumaru&family=Teko:wght@500;600;700&display=swap');
@@ -240,26 +254,11 @@ const AppContent = () => {
     <React.Fragment>
       <style dangerouslySetInnerHTML={{ __html: globais }} />
 
-      {hasCustomAICode && (
-        <style dangerouslySetInnerHTML={{ __html: `
-          .ia-custom-effect-layer { ${effectCSS} }
-          ${effectAnim}
-        `}} />
-      )}
-      
-      {hasCustomAICode && (
-        <div className="fixed inset-0 pointer-events-none z-[9998] ia-custom-effect-layer opacity-60 no-hue mix-blend-screen"></div>
+      {effectUrl && (
+        <img src={effectUrl} alt="" className="fixed inset-0 w-full h-full object-cover pointer-events-none z-[9998] opacity-60 no-hue no-hue-effect mix-blend-screen" />
       )}
 
-      {effectHTML && (
-        <div className="fixed inset-0 pointer-events-none z-[9998] no-hue" dangerouslySetInnerHTML={{ __html: effectHTML }} />
-      )}
-
-      {effectUrl && !effectHTML && (
-        <img src={effectUrl} alt="Efeito Equipado" className="fixed inset-0 w-full h-full object-cover pointer-events-none z-[9998] opacity-60 no-hue no-hue-effect mix-blend-screen" />
-      )}
-
-      {/* RENDERIZAÇÃO DOS 10 EFEITOS ESPECIAIS */}
+      {/* RENDERIZAÇÃO DOS 10 EFEITOS ESPECIAIS (CÓDIGO NATIVO 100% SEGURO) */}
       {showAmaterasu && (
         <div className="fixed inset-0 pointer-events-none z-[9998] overflow-hidden mix-blend-screen">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(75,0,130,0.15)_0%,transparent_80%)]"></div>
@@ -351,7 +350,7 @@ const AppContent = () => {
         </div>
       )}
 
-      {/* Cabeçalho sem o borrão de vidro fosco */}
+      {/* Cabeçalho Limpo */}
       {!isFullScreenView && user && !authLoading && (
         <header style={{ '--theme-hue': themeHue }} className="theme-wrapper fixed top-0 left-0 w-full z-[9990] bg-gradient-to-b from-[#050508] via-[#050508]/80 to-transparent pt-4 pb-8 px-4 text-[#F5F7FF] pointer-events-none">
           <div className="flex items-center justify-between max-w-7xl mx-auto drop-shadow-md pointer-events-auto">
