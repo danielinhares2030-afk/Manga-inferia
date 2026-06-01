@@ -14,7 +14,6 @@ const RARITIES = {
 const FALLBACK_POOL = [
   { id: 't_roxo', type: 'tema', rarity: 'rare', name: 'Abismo (Roxo)' },
   { id: 't_azul', type: 'tema', rarity: 'rare', name: 'Gelo (Azul)' },
-  { id: 't_verde', type: 'tema', rarity: 'epic', name: 'Tóxico (Verde)' },
   { id: 'm_ouro', type: 'moldura', rarity: 'legendary', name: 'Aura Dourada', color: '#FFD700' },
   { id: 'av_1', type: 'avatar', rarity: 'rare', name: 'Guerreiro de Inferia', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200' }
 ];
@@ -31,8 +30,7 @@ const CaixaView = ({ user, perfil = {} }) => {
       try {
         const snap = await getDocs(collection(db, 'reliquias_pool'));
         if (!snap.empty) {
-          // Filtramos completamente qualquer item do tipo 'efeito' que venha do banco
-          const fetchedItems = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(item => item.type !== 'efeito');
+          const fetchedItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
           setItemsPool(fetchedItems);
         } else {
           setItemsPool(FALLBACK_POOL);
@@ -111,37 +109,11 @@ const CaixaView = ({ user, perfil = {} }) => {
     }
   };
 
-  const handleDailyClaim = async () => {
-    if (processing || !user) return;
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (perfil.ultimoResgateDiario === today) {
-      if (window.mostrarAviso) window.mostrarAviso("Você já coletou seu bônus de hoje!", 'error');
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      const minMoedas = 15;
-      const maxMoedas = 25;
-      const rewardCoins = Math.floor(Math.random() * (maxMoedas - minMoedas + 1)) + minMoedas;
-      const newMoedas = (perfil.moedas || 0) + rewardCoins;
-      
-      await setDoc(doc(db, 'usuarios', user.uid), { 
-        moedas: newMoedas,
-        ultimoResgateDiario: today
-      }, { merge: true });
-      
-      if (window.mostrarAviso) window.mostrarAviso(`+${rewardCoins} Moedas obtidas com sucesso!`);
-    } catch (err) {
-      if (window.mostrarAviso) window.mostrarAviso("Erro ao resgatar o bônus diário.", 'error');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   const activeRarity = reward && reward.rarity && RARITIES[reward.rarity] ? RARITIES[reward.rarity] : RARITIES['common'];
   const currentDisplayPool = itemsPool.length > 0 ? itemsPool : FALLBACK_POOL;
+
+  // Variáveis para Injeção Dinâmica na Recompensa
+  const rewardClass = reward?.uniqueClass || (reward?.css ? reward.id : '');
 
   return (
     <div className="min-h-screen bg-[#050508] pb-24 font-nunito relative overflow-hidden">
@@ -153,21 +125,9 @@ const CaixaView = ({ user, perfil = {} }) => {
         </h2>
         <p className="text-[#A7ADBE] text-xs md:text-sm font-bold uppercase tracking-widest mb-10">Desbloqueie itens para sua conta.</p>
         
-        <div className="flex justify-center gap-4 mb-12">
-          <div className="bg-[#0A0505]/80 backdrop-blur-md border border-[#2A0A0A] rounded-2xl px-6 py-4 flex flex-col items-center shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-            <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">Moedas</span>
-            <div className="flex items-center gap-2"><Coins size={18} className="text-[#FFD700]" /><span className="font-teko text-2xl text-white leading-none mt-1">{perfil.moedas || 0}</span></div>
-          </div>
-          <div className="bg-[#0A0505]/80 backdrop-blur-md border border-[#2A0A0A] rounded-2xl px-6 py-4 flex flex-col items-center shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-            <span className="text-[10px] font-bold text-[#A7ADBE] uppercase tracking-wider mb-1">XP Atual</span>
-            <div className="flex items-center gap-2"><Zap size={18} className="text-[#FF3333]" /><span className="font-teko text-2xl text-white leading-none mt-1">{perfil.xp || 0}</span></div>
-          </div>
-        </div>
-
         <div className="max-w-xs mx-auto space-y-4">
           <div className="bg-gradient-to-b from-[#1A0505] to-[#0A0505] border border-[#CC0000]/30 rounded-3xl p-8 flex flex-col items-center relative overflow-hidden shadow-[0_0_40px_rgba(204,0,0,0.2)] group hover:border-[#CC0000] transition-all">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(204,0,0,0.2)_0%,transparent_70%)] opacity-50 group-hover:opacity-100 transition-opacity"></div>
-            
             <PackageOpen size={80} className="text-[#CC0000] mb-6 drop-shadow-[0_0_15px_#CC0000] group-hover:animate-pulse relative z-10" strokeWidth={1.5} />
             <h3 className="font-teko text-4xl text-white mb-2 relative z-10">CAIXA INFERIA</h3>
             <p className="text-[10px] text-[#A7ADBE] uppercase font-bold tracking-widest mb-6 relative z-10 text-center">Contém 1 item de personalização</p>
@@ -183,12 +143,8 @@ const CaixaView = ({ user, perfil = {} }) => {
           </div>
 
           <div className="flex gap-2 w-full">
-            <button onClick={handleDailyClaim} disabled={processing} className="flex-1 flex items-center justify-center gap-2 text-white text-xs font-bold uppercase tracking-widest border border-[#FFD700]/30 bg-[#1A1505] py-3.5 rounded-xl transition-all shadow-md hover:border-[#FFD700] disabled:opacity-50">
-              <Calendar size={16} className="text-[#FFD700]" /> Bônus
-            </button>
-
-            <button onClick={() => setShowPoolModal(true)} className="flex-1 text-[#A7ADBE] hover:text-white text-xs font-bold uppercase tracking-widest border border-[#2A0A0A] bg-[#0A0505] py-3.5 rounded-xl transition-all shadow-md hover:border-white/20">
-              Recompensas
+            <button onClick={() => setShowPoolModal(true)} className="w-full text-[#A7ADBE] hover:text-white text-xs font-bold uppercase tracking-widest border border-[#2A0A0A] bg-[#0A0505] py-3.5 rounded-xl transition-all shadow-md hover:border-white/20">
+              Lista de Recompensas
             </button>
           </div>
         </div>
@@ -197,20 +153,31 @@ const CaixaView = ({ user, perfil = {} }) => {
       {showPoolModal && (
         <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 no-hue animate-in fade-in duration-300">
           <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl p-6 w-full max-w-md max-h-[80vh] flex flex-col font-nunito relative shadow-2xl">
-            <button onClick={() => setShowPoolModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#140505] border border-[#2A0A0A] rounded-full p-1.5 transition-colors">
+            <button onClick={() => setShowPoolModal(false)} className="absolute top-5 right-5 text-[#A7ADBE] hover:text-white bg-[#140505] border border-[#2A0A0A] rounded-full p-1.5 transition-colors z-20">
               <X size={18} />
             </button>
             <h3 className="font-anime text-base text-white tracking-widest border-l-4 border-[#CC0000] pl-2 mb-6 leading-none mt-1">RECOMPENSAS</h3>
             <div className="overflow-y-auto hide-scrollbar space-y-2 flex-1 pr-1">
               {currentDisplayPool.map((item, idx) => {
                 const rar = RARITIES[item.rarity] || RARITIES.common;
+                const modalItemClass = item.uniqueClass || (item.css ? item.id : '');
+
                 return (
-                  <div key={item.id + idx} className="flex items-center justify-between bg-[#140505] p-3 rounded-xl border border-[#1A0505]">
-                    <div className="flex flex-col min-w-0 flex-1 pr-3">
-                      <span className="text-white text-sm font-bold truncate">{item.name}</span>
+                  <div key={item.id + idx} className={`flex items-center justify-between bg-[#140505] p-3 rounded-xl border border-[#1A0505] relative overflow-hidden ${item.type === 'tema' ? modalItemClass : ''}`}>
+                    {/* Injeção Dinâmica para Preview na Modal de Pool */}
+                    {item.css && (
+                      <style dangerouslySetInnerHTML={{__html: 
+                        item.uniqueClass 
+                          ? `.${item.uniqueClass} { ${item.css} } \n ${item.animacao || item.keyframes || ''}` 
+                          : `.${item.id} { ${item.css} } \n ${item.animacao || item.keyframes || ''}`
+                      }} />
+                    )}
+
+                    <div className="flex flex-col min-w-0 flex-1 pr-3 z-10 drop-shadow-md">
+                      <span className={`text-sm font-bold truncate ${item.type === 'titulo' ? modalItemClass : 'text-white'}`}>{item.name}</span>
                       <span className="text-[9px] text-[#A7ADBE] uppercase font-black tracking-wider mt-0.5">{item.type}</span>
                     </div>
-                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shrink-0 ${rar.bg} ${rar.color}`}>
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded shrink-0 z-10 ${rar.bg} ${rar.color}`}>
                       {rar.label}
                     </span>
                   </div>
@@ -223,41 +190,54 @@ const CaixaView = ({ user, perfil = {} }) => {
 
       {opening && reward && (
         <div className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 no-hue">
-          <div className={`relative z-10 flex flex-col items-center p-10 rounded-3xl border-4 ${activeRarity.border} bg-[#050508] shadow-2xl animate-in slide-in-from-bottom-10`}>
+          
+          {/* Injeção CSS para o Modal de Drop */}
+          {reward.css && (
+            <style dangerouslySetInnerHTML={{__html: 
+              reward.uniqueClass 
+                ? `.${reward.uniqueClass} { ${reward.css} } \n ${reward.animacao || reward.keyframes || ''}` 
+                : `.${reward.id} { ${reward.css} } \n ${reward.animacao || reward.keyframes || ''}`
+            }} />
+          )}
+
+          <div className={`relative z-10 flex flex-col items-center p-10 rounded-3xl border-4 ${activeRarity.border} shadow-2xl animate-in slide-in-from-bottom-10 overflow-hidden ${reward.type === 'tema' ? rewardClass : 'bg-[#050508]'}`}>
             
-            {reward.rarity === 'mythical' && <Sparkles className="absolute -top-8 text-red-500 animate-spin" size={64} />}
+            {reward.rarity === 'mythical' && <Sparkles className="absolute -top-8 text-red-500 animate-spin z-20" size={64} />}
             
             {reward.isDuplicate && (
-              <div className="absolute -top-4 bg-[#FF3333] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-[0_0_15px_#FF3333] whitespace-nowrap animate-bounce">
+              <div className="absolute -top-4 bg-[#FF3333] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-[0_0_15px_#FF3333] whitespace-nowrap animate-bounce z-20">
                 Item Repetido!
               </div>
             )}
 
-            <span className={`text-[10px] font-black uppercase tracking-widest mt-2 mb-6 px-4 py-1.5 rounded-full ${reward.isDuplicate ? 'bg-[#2A0A0A] text-[#A7ADBE]' : `${activeRarity.bg} ${activeRarity.color}`} shadow-lg`}>
+            <span className={`text-[10px] font-black uppercase tracking-widest mt-2 mb-6 px-4 py-1.5 rounded-full z-20 ${reward.isDuplicate ? 'bg-[#2A0A0A] text-[#A7ADBE]' : `${activeRarity.bg} ${activeRarity.color}`} shadow-lg`}>
               {activeRarity.label} - {reward.type || 'Item'}
             </span>
             
-            <h2 className="font-teko text-4xl text-white text-center mb-4 drop-shadow-md">{reward.name || 'Recompensa'}</h2>
+            {/* Nome Renderizado com a Classe de Título (Se aplicável) */}
+            <h2 className={`font-teko text-4xl text-center mb-4 z-20 drop-shadow-md ${reward.type === 'titulo' ? rewardClass : 'text-white'}`}>
+              {reward.name || 'Recompensa'}
+            </h2>
             
             {reward.isDuplicate ? (
-              <div className="flex gap-4 mb-8 bg-[#1A0505] border border-[#FF3333]/30 px-6 py-3 rounded-2xl animate-in zoom-in duration-300">
+              <div className="flex gap-4 mb-8 bg-[#1A0505]/80 backdrop-blur-md border border-[#FF3333]/30 px-6 py-3 rounded-2xl animate-in zoom-in duration-300 z-20">
                 <div className="flex flex-col items-center"><span className="text-[#FFD700] font-teko text-2xl leading-none">+{reward.convertMoedas}</span><span className="text-[9px] uppercase font-bold text-[#A7ADBE]">Moedas</span></div>
                 <div className="w-px bg-[#2A0A0A]"></div>
                 <div className="flex flex-col items-center"><span className="text-[#FF3333] font-teko text-2xl leading-none">+{reward.convertXp}</span><span className="text-[9px] uppercase font-bold text-[#A7ADBE]">XP</span></div>
               </div>
             ) : (
-              <div className="mb-6">
+              <div className="mb-6 z-20">
                 {reward.type === 'avatar' || reward.type === 'capa' ? (
                   <img src={reward.image || ''} className="w-40 h-40 object-cover rounded-2xl border-2 border-white/20 shadow-2xl" alt="" />
                 ) : (
-                  <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center border-2 border-white/20 shadow-xl">
+                  <div className="w-32 h-32 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border-2 border-white/20 shadow-xl">
                     <Box size={56} className={activeRarity.color} />
                   </div>
                 )}
               </div>
             )}
             
-            <button onClick={() => setOpening(false)} className="px-10 py-4 bg-white text-black font-black rounded-full uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.5)] mt-2">
+            <button onClick={() => setOpening(false)} className="px-10 py-4 bg-white text-black font-black rounded-full uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.5)] mt-2 z-20">
               COLETAR
             </button>
           </div>
