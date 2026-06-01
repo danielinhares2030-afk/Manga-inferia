@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, BookOpen, History, Bell, Settings, LogOut, Eye, EyeOff, Edit3, X, Loader2, Flame, Image as ImageIcon, MapPin, Calendar, Package, Coins, ChevronRight } from 'lucide-react';
 import { doc, setDoc, collection, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -49,6 +49,11 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const safeBiblioteca = Array.isArray(biblioteca) ? biblioteca : [];
   const eq = safePerfil.equipamentos || {};
 
+  // Extração inteligente do Tema e Título Equipados
+  const equippedTitulo = eq.titulo || null;
+  // Procura o tema completo no inventário com base no nome salvo, ou puxa do equipamento se já foi migrado
+  const equippedTema = eq.tema || inventario.find(i => i.type === 'tema' && i.name === safePerfil.tema) || null;
+
   useEffect(() => {
     if (!user) return;
     const unsub = onSnapshot(collection(db, 'usuarios', user.uid, 'inventario'), (snap) => {
@@ -80,14 +85,16 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const equipItem = async (item) => {
     if (!user || !item) return;
     try {
+      const equipamentosAtualizados = { ...eq };
+      equipamentosAtualizados[item.type] = item;
+      
+      let updatePayload = { equipamentos: equipamentosAtualizados };
       if (item.type === 'tema') {
-        await setDoc(doc(db, 'usuarios', user.uid), { tema: item.name }, { merge: true });
+        updatePayload.tema = item.name;
         localStorage.setItem('mi_theme', item.name);
-      } else {
-        const equipamentosAtualizados = { ...eq };
-        equipamentosAtualizados[item.type] = item;
-        await setDoc(doc(db, 'usuarios', user.uid), { equipamentos: equipamentosAtualizados }, { merge: true });
       }
+      
+      await setDoc(doc(db, 'usuarios', user.uid), updatePayload, { merge: true });
       if (window.mostrarAviso) window.mostrarAviso(`${item.name} Equipado!`);
     } catch(err) {}
   };
@@ -95,14 +102,16 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const unequipItem = async (item) => {
     if (!user || !item) return;
     try {
+      const equipamentosAtualizados = { ...eq };
+      delete equipamentosAtualizados[item.type];
+
+      let updatePayload = { equipamentos: equipamentosAtualizados };
       if (item.type === 'tema') {
-        await setDoc(doc(db, 'usuarios', user.uid), { tema: 'Inferia (Vermelho)' }, { merge: true });
+        updatePayload.tema = 'Inferia (Vermelho)';
         localStorage.setItem('mi_theme', 'Inferia (Vermelho)');
-      } else {
-        const equipamentosAtualizados = { ...eq };
-        delete equipamentosAtualizados[item.type];
-        await setDoc(doc(db, 'usuarios', user.uid), { equipamentos: equipamentosAtualizados }, { merge: true });
       }
+
+      await setDoc(doc(db, 'usuarios', user.uid), updatePayload, { merge: true });
     } catch(err) {}
   };
 
@@ -142,8 +151,32 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
   const currentAvatar = eq.avatar?.image || safePerfil.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200";
   const currentCover = eq.capa?.image || safePerfil.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000";
 
+  // Classes Baseadas na IA
+  const temaClass = equippedTema?.uniqueClass || (equippedTema?.css ? equippedTema.id : '');
+  const tituloClass = equippedTitulo?.uniqueClass || (equippedTitulo?.css ? equippedTitulo.id : '');
+
   return (
-    <div className="animate-in fade-in duration-300 font-nunito pb-10 min-h-screen relative">
+    <div 
+      className={`animate-in fade-in duration-300 font-nunito pb-10 min-h-screen relative ${temaClass}`}
+      style={equippedTema && !equippedTema.css ? { backgroundColor: equippedTema.color + '20' } : {}}
+    >
+      {/* --- INJEÇÃO DE CSS GLOBAL DO PERFIL --- */}
+      {equippedTema?.css && (
+        <style dangerouslySetInnerHTML={{__html: 
+          equippedTema.uniqueClass 
+            ? `.${equippedTema.uniqueClass} { ${equippedTema.css} } \n ${equippedTema.animacao || equippedTema.keyframes || ''}` 
+            : `.${equippedTema.id} { ${equippedTema.css} } \n ${equippedTema.animacao || equippedTema.keyframes || ''}`
+        }} />
+      )}
+      
+      {equippedTitulo?.css && (
+        <style dangerouslySetInnerHTML={{__html: 
+          equippedTitulo.uniqueClass 
+            ? `.${equippedTitulo.uniqueClass} { ${equippedTitulo.css} } \n ${equippedTitulo.animacao || equippedTitulo.keyframes || ''}` 
+            : `.${equippedTitulo.id} { ${equippedTitulo.css} } \n ${equippedTitulo.animacao || equippedTitulo.keyframes || ''}`
+        }} />
+      )}
+
       <div className="relative w-full h-64 md:h-80 bg-[#0A0505] border-b border-[#2A0A0A]">
         <img src={currentCover} alt="" className="w-full h-full object-cover opacity-60 object-center no-hue" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/30 to-transparent"></div>
@@ -154,14 +187,18 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
           <div className="w-28 h-28 md:w-36 md:h-36 shrink-0 rounded-full border-4 border-[#050508] overflow-hidden bg-[#0A0505] shadow-[0_0_30px_rgba(204,0,0,0.3)] relative z-10" style={{ boxShadow: eq.moldura ? `0 0 20px ${eq.moldura.color}` : 'none', borderColor: eq.moldura ? eq.moldura.color : '#050508' }}>
             <img src={currentAvatar} alt="" className="w-full h-full object-cover no-hue" loading="lazy" />
           </div>
-          {eq.moldura?.animated && <div className="absolute inset-0 w-full h-full rounded-full border-[6px] border-[#CC0000] animate-ping opacity-50 z-0"></div>}
         </div>
 
         <div className="flex-1 mt-2 md:mt-0 pt-2 w-full">
           <div className="flex items-center justify-between w-full mb-1">
             <div>
-              <h2 className="font-anime text-2xl md:text-3xl font-bold tracking-wider leading-none drop-shadow-md text-[#F5F7FF]">{safePerfil.nome || 'NOCTIS'}</h2>
-              {eq.titulo && <span className="text-[10px] font-bold uppercase tracking-widest mt-1 block" style={{ color: eq.titulo.color || '#FFF' }}>{eq.titulo.name}</span>}
+              {/* --- APLICAÇÃO DA CLASSE NO NICKNAME --- */}
+              <h2 
+                className={`font-anime text-2xl md:text-3xl font-bold tracking-wider leading-none drop-shadow-md text-[#F5F7FF] ${tituloClass}`}
+                style={equippedTitulo && !equippedTitulo.css ? { color: equippedTitulo.color } : {}}
+              >
+                {safePerfil.nome || 'NOCTIS'}
+              </h2>
             </div>
             <button onClick={openEditProfile} className="flex items-center gap-2 bg-[#1A0505] border border-[#CC0000]/40 text-[#FF3333] px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#CC0000] hover:text-white transition-colors shadow-[0_0_15px_rgba(204,0,0,0.2)] font-teko text-lg">
               <Edit3 size={16} /> Editar
@@ -241,44 +278,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
               </button>
             </div>
           </div>
-
-          <div className="pl-4 mb-6">
-            <h3 className="font-anime text-sm md:text-base font-bold tracking-widest uppercase text-[#A7ADBE] mb-4 border-l-2 border-[#2A0A0A] pl-3 leading-none mt-2">Conta</h3>
-            <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4 pr-4 snap-x">
-              <button onClick={() => setHistoryModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg">
-                <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#7A3CFF] border border-[#7A3CFF]/20"><History size={16} /></div>
-                <span className="text-sm font-bold text-left tracking-wide">Histórico<br/>Detalhado</span>
-              </button>
-              <button onClick={() => setNotifModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg relative">
-                {notificacoes.length > 0 && notificacoes.some(n => !n.read) && <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-[#CC0000] rounded-full animate-ping"></div>}
-                <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#FF8C00] border border-[#FF8C00]/20"><Bell size={16} /></div>
-                <span className="text-sm font-bold text-left tracking-wide">Central de<br/>Avisos</span>
-              </button>
-              <button onClick={() => setSettingsModal(true)} className="snap-start min-w-[140px] bg-[#0A0505] border border-[#2A0A0A] p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#1A0505] transition-colors shadow-lg">
-                <div className="w-8 h-8 rounded-full bg-[#1A0505] flex items-center justify-center text-[#A7ADBE] border border-[#A7ADBE]/20"><Settings size={16} /></div>
-                <span className="text-sm font-bold text-left tracking-wide">Configurar<br/>Leitor</span>
-              </button>
-              <button onClick={() => signOut(auth).then(()=>setActiveTab('home'))} className="snap-start min-w-[140px] bg-[#1A0505] border border-[#CC0000]/30 p-4 rounded-2xl flex flex-col gap-3 hover:bg-[#2A0A0A] transition-colors shadow-lg">
-                <div className="w-8 h-8 rounded-full bg-[#CC0000]/20 flex items-center justify-center text-[#FF3333]"><LogOut size={16} /></div>
-                <span className="text-sm font-bold text-left text-[#FF3333] tracking-wide">Sair da<br/>Conta</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="px-4">
-            <div className="flex items-center justify-between p-4 bg-[#0A0505] border border-[#2A0A0A] rounded-2xl shadow-lg">
-              <div className="flex items-center gap-3">
-                {safePerfil.isPrivate ? <EyeOff size={22} className="text-[#CC0000]" /> : <Eye size={22} className="text-[#A7ADBE]" />}
-                <div>
-                  <p className="text-sm font-bold text-[#F5F7FF] tracking-wide">Privacidade</p>
-                  <p className="text-[11px] text-[#A7ADBE] font-bold">{safePerfil.isPrivate ? 'Seu perfil está Oculto.' : 'Seu perfil é Público.'}</p>
-                </div>
-              </div>
-              <button onClick={togglePrivacy} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.isPrivate ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
-                <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.isPrivate ? 'left-7' : 'left-1'}`}></div>
-              </button>
-            </div>
-          </div>
         </>
       ) : (
         <div className="px-4 pb-12">
@@ -296,14 +295,31 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
                 if (item.type === 'tema') isEquipped = safePerfil.tema === item.name;
                 else isEquipped = eq[item?.type]?.id === item?.id;
                 
+                // Pré-visualização do Item no Card do Inventário
+                const itemClass = item.uniqueClass || (item.css ? item.id : '');
+
                 return (
-                  <div key={item.dbId} className={`bg-[#0A0505] border ${rar.border} p-4 rounded-xl flex flex-col items-center text-center relative overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)]`}>
-                    {isEquipped && <div className="absolute top-2 right-2 w-2 h-2 bg-[#00FF88] rounded-full shadow-[0_0_8px_#00FF88]"></div>}
-                    <span className={`text-[9px] font-black uppercase tracking-widest mb-2 ${rar.color}`}>{item.type || 'Item'}</span>
-                    <h4 className="text-white text-xs font-bold line-clamp-2 mb-4 h-8">{item.name || 'Desconhecido'}</h4>
+                  <div key={item.dbId} className={`bg-[#0A0505] border ${rar.border} p-4 rounded-xl flex flex-col items-center text-center relative overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)] ${item.type === 'tema' ? itemClass : ''}`}>
+                    {/* Injeta CSS do card individual no inventário para preview */}
+                    {item.css && (
+                      <style dangerouslySetInnerHTML={{__html: 
+                        item.uniqueClass 
+                          ? `.${item.uniqueClass} { ${item.css} } \n ${item.animacao || item.keyframes || ''}` 
+                          : `.${item.id} { ${item.css} } \n ${item.animacao || item.keyframes || ''}`
+                      }} />
+                    )}
+
+                    {isEquipped && <div className="absolute top-2 right-2 w-2 h-2 bg-[#00FF88] rounded-full shadow-[0_0_8px_#00FF88] z-10"></div>}
+                    <span className={`text-[9px] font-black uppercase tracking-widest mb-2 z-10 drop-shadow-md ${rar.color}`}>{item.type || 'Item'}</span>
+                    
+                    {/* Aplica a classe de título se o item for um título */}
+                    <h4 className={`text-white text-xs font-bold line-clamp-2 mb-4 h-8 z-10 drop-shadow-md ${item.type === 'titulo' ? itemClass : ''}`}>
+                      {item.name || 'Desconhecido'}
+                    </h4>
+                    
                     <button 
                       onClick={() => isEquipped ? unequipItem(item) : equipItem(item)}
-                      className={`w-full py-2 text-[10px] font-black uppercase tracking-widest rounded transition-all ${isEquipped ? 'bg-transparent border border-[#2A0A0A] text-[#A7ADBE]' : `bg-transparent border ${rar.border} ${rar.color} hover:${rar.bg}`}`}
+                      className={`w-full py-2 text-[10px] font-black uppercase tracking-widest rounded transition-all z-10 backdrop-blur-md ${isEquipped ? 'bg-black/50 border border-[#2A0A0A] text-[#A7ADBE]' : `bg-black/50 border ${rar.border} ${rar.color} hover:${rar.bg}`}`}
                     >
                       {isEquipped ? 'REMOVER' : 'EQUIPAR'}
                     </button>
@@ -314,135 +330,6 @@ const ProfileView = React.memo(({ perfil = {}, biblioteca = [], setActiveTab = (
           )}
         </div>
       )}
-
-      {editProfileModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 no-hue animate-in fade-in duration-200">
-          <div className="bg-[#0A0505] border border-[#CC0000]/40 rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
-            <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
-              <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#CC0000] pl-2 leading-none mt-1">EDITAR PERFIL</h3>
-              <button onClick={() => setEditProfileModal(false)} disabled={isSavingProfile} className="text-[#A7ADBE] hover:text-white bg-[#0A0505] rounded-full p-1.5 border border-[#2A0A0A]"><X size={18} /></button>
-            </div>
-            <div className="overflow-y-auto hide-scrollbar p-6 space-y-4">
-              <div>
-                <label className="text-xs font-bold text-[#A7ADBE] uppercase block mb-2">Imagem de Perfil</label>
-                <div className="flex items-center gap-3">
-                  <img src={editForm.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200"} className="w-12 h-12 rounded-full border border-[#2A0A0A] object-cover" alt="" />
-                  <label className="flex-1 bg-[#140505] border border-[#2A0A0A] text-[#A7ADBE] hover:text-white rounded-lg py-3 px-3 text-xs font-bold cursor-pointer text-center flex justify-center items-center gap-2 transition-colors">
-                    <ImageIcon size={16} /> GALERIA
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'avatar')} />
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-[#A7ADBE] uppercase block mb-2">Capa de Fundo</label>
-                <div className="flex items-center gap-3">
-                  <img src={editForm.capa || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1000"} className="w-16 h-10 rounded border border-[#2A0A0A] object-cover" alt="" />
-                  <label className="flex-1 bg-[#140505] border border-[#2A0A0A] text-[#A7ADBE] hover:text-white rounded-lg py-3 px-3 text-xs font-bold cursor-pointer text-center flex justify-center items-center gap-2 transition-colors">
-                    <ImageIcon size={16} /> GALERIA
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'capa')} />
-                  </label>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Nome</label><input type="text" name="nome" value={editForm.nome || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
-                <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Idade</label><input type="number" name="idade" value={editForm.idade || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
-                <div><label className="text-xs font-bold text-[#A7ADBE] uppercase block">País</label><input type="text" name="pais" value={editForm.pais || ''} onChange={handleEditChange} className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none" /></div>
-                <div className="col-span-2"><label className="text-xs font-bold text-[#A7ADBE] uppercase block">Biografia</label><textarea name="biografia" value={editForm.biografia || ''} onChange={handleEditChange} rows="3" className="w-full bg-[#140505] border border-[#2A0A0A] text-white rounded-xl py-2.5 px-4 text-sm focus:border-[#CC0000] outline-none resize-none"></textarea></div>
-              </div>
-              <button onClick={saveProfileSettings} disabled={isSavingProfile} className="mt-4 w-full bg-gradient-to-r from-[#CC0000] to-[#8B0000] text-white py-3.5 rounded-xl font-bold tracking-widest shadow-[0_0_15px_rgba(204,0,0,0.4)] flex justify-center items-center gap-2 font-teko text-xl uppercase">
-                {isSavingProfile ? <Loader2 className="animate-spin" size={20} /> : 'SALVAR'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {historyModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 no-hue animate-in fade-in duration-200">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
-            <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
-              <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#7A3CFF] pl-2 leading-none mt-1">HISTÓRICO</h3>
-              <button onClick={() => setHistoryModal(false)} className="text-[#A7ADBE] hover:text-white bg-[#0A0505] rounded-full p-1.5 border border-[#2A0A0A]"><X size={18} /></button>
-            </div>
-            <div className="overflow-y-auto hide-scrollbar p-4 space-y-3">
-              {safeBiblioteca.length > 0 ? safeBiblioteca.map(manga => (
-                <div key={manga.id} onClick={() => { setHistoryModal(false); onMangaClick && onMangaClick(manga.id, manga.ultimoCapId); }} className="flex gap-4 bg-[#140505] p-3 rounded-2xl border border-[#2A0A0A] items-center cursor-pointer hover:border-[#7A3CFF]/50 transition-all group">
-                  <img src={manga.capaUrl || manga.img} className="w-14 h-20 object-cover rounded-xl border border-[#0A0505]" alt="" />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-white mb-1 group-hover:text-[#7A3CFF] transition-colors">{manga.nome || manga.title}</h4>
-                    <p className="text-[10px] text-[#A7ADBE] font-bold uppercase mb-2 tracking-widest">Cap. {manga.capAtual || 1} • {manga.progresso || 0}%</p>
-                    <div className="w-full h-1.5 bg-[#0A0505] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#7A3CFF]" style={{ width: `${manga.progresso || 0}%` }}></div>
-                    </div>
-                  </div>
-                  <ChevronRight className="text-[#2A0A0A] group-hover:text-[#7A3CFF] mr-1" size={20} />
-                </div>
-              )) : (
-                <div className="flex flex-col items-center justify-center py-10 text-[#A7ADBE]">
-                  <History size={40} className="text-[#2A0A0A] mb-3" />
-                  <p className="text-xs font-bold uppercase tracking-widest">Nenhuma leitura registrada</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {notifModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 no-hue animate-in fade-in duration-200">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl relative overflow-hidden">
-            <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
-              <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#FF8C00] pl-2 leading-none mt-1">AVISOS</h3>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setNotificacoes(notificacoes.map(n => ({ ...n, read: true })))} className="text-[10px] uppercase font-bold tracking-widest text-[#FF8C00] hover:text-white">Ler Tudo</button>
-                <button onClick={() => setNotifModal(false)} className="text-[#A7ADBE] hover:text-white bg-[#0A0505] rounded-full p-1.5 border border-[#2A0A0A]"><X size={18} /></button>
-              </div>
-            </div>
-            <div className="overflow-y-auto hide-scrollbar p-4 space-y-3">
-              {notificacoes.length > 0 ? notificacoes.map(n => (
-                <div key={n.id} className={`p-4 rounded-2xl border transition-all flex gap-4 items-start ${n.read ? 'bg-[#0A0505] border-[#2A0A0A] opacity-60' : 'bg-[#140505] border-[#FF8C00]/40 shadow-[0_0_15px_rgba(255,140,0,0.1)]'}`}>
-                  <div className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${n.read ? 'bg-[#2A0A0A]' : 'bg-[#FF8C00] shadow-[0_0_8px_#FF8C00]'}`}></div>
-                  <div className="flex-1">
-                    <p className={`text-sm ${n.read ? 'text-[#A7ADBE]' : 'text-white font-bold tracking-wide'}`}>{n.text}</p>
-                    <p className="text-[10px] text-[#777] font-bold uppercase tracking-widest mt-1.5">{n.time}</p>
-                  </div>
-                </div>
-              )) : (
-                <div className="flex flex-col items-center justify-center py-10 text-[#A7ADBE]">
-                  <Bell size={40} className="text-[#2A0A0A] mb-3" />
-                  <p className="text-xs font-bold uppercase tracking-widest">Tudo limpo por aqui</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {settingsModal && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 no-hue animate-in fade-in duration-200">
-          <div className="bg-[#0A0505] border border-[#2A0A0A] rounded-3xl w-full max-w-sm flex flex-col shadow-2xl relative overflow-hidden">
-            <div className="p-5 border-b border-[#1A0505] flex justify-between items-center bg-[#140505]">
-              <h3 className="text-lg font-bold text-[#F5F7FF] font-anime tracking-widest border-l-4 border-[#A7ADBE] pl-2 leading-none mt-1">LEITOR</h3>
-              <button onClick={() => setSettingsModal(false)} className="text-[#A7ADBE] hover:text-white bg-[#0A0505] rounded-full p-1.5 border border-[#2A0A0A]"><X size={18} /></button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between p-4 bg-[#140505] rounded-2xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE] tracking-wide">Leitura Paginada</span>
-                <button onClick={() => toggleSetting('modoPaginado')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.modoPaginado ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.modoPaginado ? 'left-7' : 'left-1'}`}></div>
-                </button>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-[#140505] rounded-2xl border border-[#2A0A0A]">
-                <span className="text-sm font-bold text-[#A7ADBE] tracking-wide">Scroll Suave</span>
-                <button onClick={() => toggleSetting('scrollSuave')} className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none ${safePerfil.scrollSuave ? 'bg-[#CC0000]' : 'bg-[#2A0A0A]'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all duration-300 ${safePerfil.scrollSuave ? 'left-7' : 'left-1'}`}></div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 });
